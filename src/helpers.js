@@ -121,23 +121,23 @@ export function lovelace_config()
     return null;
 }
 
-export function pat97_honeycomb_menu_templates()
+export function honeycomb_menu_templates()
 {
     // Store to a gloval variable to skip dom traversion
-    if( window.pat97_honeycomb_menu_templates )
-        return window.pat97_honeycomb_menu_templates;
+    if( window.honeycomb_menu_templates )
+        return window.honeycomb_menu_templates;
     
     let lconfig = lovelace_config();
 
     if( ! lconfig )
         return null;
 
-    window.pat97_honeycomb_menu_templates = lconfig.pat97_honeycomb_menu_templates || {};
+    window.honeycomb_menu_templates = lconfig.honeycomb_menu_templates || {};
     
-    if( ! lconfig.pat97_honeycomb_menu_templates )
+    if( ! lconfig.honeycomb_menu_templates )
         return null;
         
-    return lconfig.pat97_honeycomb_menu_templates;
+    return lconfig.honeycomb_menu_templates;
 }
 
 function _errorElement(error, origConfig) 
