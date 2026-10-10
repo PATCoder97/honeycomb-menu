@@ -117,7 +117,7 @@ Any other options for `Button:type` | - | - | -
 
 ## Extended layout example
 
-All new interaction features are opt-in. The original six slot assignments are preserved. Shapes use regular hexagons with a height/width ratio of `2 / sqrt(3)` and one row step of `sqrt(3) / 2`. Opening, hover, press and drag highlighting preserve item sizes so they do not change the gaps; closing retains its zoom animation. Browser layout rounding and edge anti-aliasing can still affect individual pixels.
+All new interaction features are opt-in. The original six slot assignments are preserved. Shapes use regular hexagons with a height/width ratio of `2 / sqrt(3)` and one row step of `sqrt(3) / 2`. At rest, every perpendicular neighbor gap is `2 × spacing`. Opening/closing, hover, press and drag highlighting use uniform zoom: gaps change temporarily during the effect and return to their original values afterward. Browser layout rounding and edge anti-aliasing can still affect individual pixels.
 
 ```yaml
 action: fire-dom-event

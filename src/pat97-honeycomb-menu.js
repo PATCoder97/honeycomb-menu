@@ -204,9 +204,14 @@ class Pat97HoneycombMenu extends LitElement
             @keyframes zoomIn {
             from {
                 opacity: 0;
+                transform: scale3d(0.3, 0.3, 0.3);
             }
             50% {
                 opacity: 1;
+            }
+            to {
+                opacity: 1;
+                transform: scale3d(1, 1, 1);
             }
             }
             @keyframes zoomOut {
@@ -281,7 +286,7 @@ class Pat97HoneycombMenu extends LitElement
                 width: var(--item-size);
                 padding: var(--spacing);
                 transform-origin: center;
-                transition: filter 160ms ease;
+                transition: transform 160ms ease, filter 160ms ease;
             }
             pat97-honeycomb-menu-item.center-item {
                 z-index: 2;
@@ -290,6 +295,7 @@ class Pat97HoneycombMenu extends LitElement
             @media (hover: hover) and (pointer: fine) {
                 :host(:not([closing])) pat97-honeycomb-menu-item:not(.drag-hover):not([disabled]):hover {
                     filter: brightness(1.08);
+                    transform: scale3d(1.04, 1.04, 1.04);
                     z-index: 3;
                 }
                 :host(:not([closing])) pat97-honeycomb-menu-item.center-item:not(.drag-hover):not([disabled]):hover {
@@ -298,9 +304,11 @@ class Pat97HoneycombMenu extends LitElement
             }
             :host(:not([closing])) pat97-honeycomb-menu-item:not(.drag-hover):not([disabled]):active {
                 filter: brightness(0.96);
+                transform: scale3d(0.96, 0.96, 0.96);
             }
             pat97-honeycomb-menu-item.drag-hover {
                 filter: brightness(1.18);
+                transform: scale3d(1.08, 1.08, 1.08);
                 z-index: 3;
             }
             pat97-honeycomb-menu-item.center-item.drag-hover {
@@ -308,10 +316,11 @@ class Pat97HoneycombMenu extends LitElement
             }
             pat97-honeycomb-menu-item, pat97-xy-pad {
                 animation-duration: 0.5s;
-                animation-fill-mode: both;
+                animation-fill-mode: backwards;
                 animation-name: zoomIn;
             }
             :host([closing]) pat97-honeycomb-menu-item, :host([closing]) pat97-xy-pad {
+                animation-fill-mode: both;
                 animation-name: zoomOut;
             }
             :host([closing]) pat97-honeycomb-menu-item[selected] {

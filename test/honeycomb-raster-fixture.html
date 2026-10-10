@@ -58,6 +58,7 @@
     const config = {
       entity: 'light.room', style: 'mushroom', size: options.size, spacing: options.spacing,
       animation_speed: 0, empty_slots: options.emptySlots || 'visible',
+      animation_mode: options.animationMode || 'legacy',
       center_button: options.center ? { icon: 'mdi:close' } : false,
       buttons: Array.from({ length: options.count }, () => [{ icon: 'mdi:lightbulb', show_name: false, show_state: false }])
     };
@@ -67,7 +68,7 @@
     menu.style.left = '20px';
     menu.style.top = '20px';
     const style = document.createElement('style');
-    style.textContent = '* { animation: none !important; transition: none !important; }';
+    style.textContent = options.animations ? '' : '* { animation: none !important; transition: none !important; }';
     menu.shadowRoot.append(style);
     const items = [...menu.shadowRoot.querySelectorAll(`${tag}-item`)];
     await Promise.all(items.map(item => item.updateComplete));

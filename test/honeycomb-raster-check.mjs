@@ -60,13 +60,45 @@ try {
     }
     await page.evaluate(() => window.renderMenu('pat97-honeycomb-menu', {size:260,spacing:1,count:18,center:true}));
     const center = page.locator('pat97-honeycomb-menu-item.center-item');
+    const restGeometry = await page.evaluate(() => measureGeometry());
+    const restRect = await center.boundingBox();
     await center.hover();
-    assert.equal(await center.evaluate(element => getComputedStyle(element).transform), 'none');
-    checkGeometry(await page.evaluate(() => measureGeometry()), 42);
+    assert.match(await center.evaluate(element => getComputedStyle(element).transform), /matrix(?:3d)?\(1\.04,/);
+    assert.ok(Math.abs((await center.boundingBox()).width/restRect.width-1.04) < 0.0001);
     await page.mouse.down();
-    checkGeometry(await page.evaluate(() => measureGeometry()), 42);
+    assert.match(await center.evaluate(element => getComputedStyle(element).transform), /matrix(?:3d)?\(0\.96,/);
     await page.mouse.up();
     await center.evaluate(element => element.classList.add('drag-hover'));
+    assert.match(await center.evaluate(element => getComputedStyle(element).transform), /matrix(?:3d)?\(1\.08,/);
+    await center.evaluate(element => element.classList.remove('drag-hover'));
+    await page.mouse.move(900,700);
+    assert.equal(await center.evaluate(element => getComputedStyle(element).transform), 'none');
+    checkGeometry(await page.evaluate(() => measureGeometry()), 42);
+    assert.deepEqual(await page.evaluate(() => measureGeometry()), restGeometry);
+    // Exercise real opening animations too: zoom must release its transform
+    // at completion, otherwise animation fill can suppress later hover effects.
+    await page.evaluate(() => window.renderMenu('pat97-honeycomb-menu', {size:260,spacing:1,count:18,center:true,animations:true,animationMode:'paired'}));
+    const opening = await page.evaluate(async () => {
+      const animations = testMenu.shadowRoot.querySelector('.center-item').getAnimations();
+      const zoom = animations.find(animation => animation.animationName === 'zoomIn');
+      if(!zoom) throw new Error('Opening zoom missing');
+      zoom.pause();
+      zoom.currentTime = 0;
+      const initial = getComputedStyle(testMenu.shadowRoot.querySelector('.center-item')).transform;
+      const all = [...new Set([...testMenu.shadowRoot.querySelectorAll('*')].flatMap(element => element.getAnimations()))];
+      all.forEach(animation => animation.finish());
+      await Promise.all(all.map(animation => animation.finished));
+      await new Promise(resolve => requestAnimationFrame(resolve));
+      return initial;
+    });
+    assert.match(opening, /matrix(?:3d)?\(0\.3,/);
+    await page.waitForFunction(() => [...testMenu.shadowRoot.querySelectorAll('pat97-honeycomb-menu-item')].every(item => getComputedStyle(item).transform === 'none'));
+    checkGeometry(await page.evaluate(() => measureGeometry()), 42);
+    assert.equal(await center.evaluate(element => getComputedStyle(element).transform), 'none');
+    await center.hover();
+    await page.waitForFunction(() => Math.abs(new DOMMatrixReadOnly(getComputedStyle(testMenu.shadowRoot.querySelector('.center-item')).transform).a - 1.04) < 0.00001);
+    await page.mouse.move(900,700);
+    await page.waitForFunction(() => getComputedStyle(testMenu.shadowRoot.querySelector('.center-item')).transform === 'none');
     checkGeometry(await page.evaluate(() => measureGeometry()), 42);
     // Negative controls: the verifier must reject the two previous regressions.
     await page.evaluate(() => {
