@@ -74,9 +74,13 @@ for(const dpr of [1,1.25,1.5,2]) {
   });
   const reference=await page.screenshot({clip,path:`${output}/${id}-reference.png`});
   assert.ok(rest.equals(reference),`Resting pixels differ from no-animation control: ${id}`);
-  await page.evaluate(()=>testMenu.shadowRoot.querySelector('#no-motion-reference').remove());
+  // Discard the static control, then open a fresh menu through the real entry
+  // point. Removing animation:none on a live node synthetically restarts CSS
+  // animation, which is not what a user reopening the menu does.
+  await page.evaluate(()=>testMenu.remove());
+  await page.locator('#launcher').click();await page.mouse.move(900,700);
   await waitForRest(page);
-  assert.ok(reference.equals(await page.screenshot({clip})),`Restoring animation changed pixels: ${id}`);
+  assert.ok(reference.equals(await page.screenshot({clip,path:`${output}/${id}-fresh-opening.png`})),`Fresh opening changed pixels: ${id}`);
   // Traverse multiple cells quickly, then return to rest; no synthetic hover.
   for(const index of [0,1,3,count-1]) {
     await items.nth(index).hover();
@@ -84,19 +88,6 @@ for(const dpr of [1,1.25,1.5,2]) {
   }
   await page.mouse.move(900,700);
   assert.ok(reference.equals(await page.screenshot({clip})),`Hover exit changed pixels: ${id}`);
-  // Recreate the exact faulty forward-fill condition, let zoom finish normally,
-  // and prove our pixel comparator rejects it (geometry alone still passes).
-  await page.evaluate(()=>{
-    const s=document.createElement('style');s.id='forward-fill-negative';
-    s.textContent=':host(:not([closing])) pat97-honeycomb-menu-item {animation-fill-mode:both!important}';
-    testMenu.shadowRoot.append(s);
-  });
-  await waitForRest(page);
-  const negative=await page.screenshot({clip,path:`${output}/${id}-forward-fill-regression.png`});
-  assert.ok(!reference.equals(negative),`Pixel test missed forward-fill regression: ${id}`);
-  await page.evaluate(()=>testMenu.shadowRoot.querySelector('#forward-fill-negative').remove());
-  await waitForRest(page);
-  assert.ok(reference.equals(await page.screenshot({clip})),`Removing forward fill did not restore pixels: ${id}`);
   // Close through the shade and wait for actual removal, then reopen publicly.
   await page.mouse.click(900,700);
   await page.waitForFunction(()=>!testMenu.isConnected);
@@ -113,6 +104,20 @@ for(const dpr of [1,1.25,1.5,2]) {
   assert.ok(actions.some(event=>event.action==='tap' && event.config.entity==='light.room' && event.config.tap_action.action==='toggle'),`Real card tap did not emit the expected HA action: ${JSON.stringify(actions)}`);
   assert.equal(await page.locator('pat97-honeycomb-menu-item[selected]').count(),1);
   await page.waitForFunction(()=>!testMenu.isConnected);
+  // Run deliberately broken CSS on a separate disposable menu, never on the
+  // positive user flow. It must still fail the exact pixel comparator.
+  await page.locator('#launcher').click();await page.mouse.move(900,700);
+  await waitForRest(page);
+  const control=await page.screenshot({clip});
+  await page.evaluate(()=>{
+    const s=document.createElement('style');
+    s.textContent=':host(:not([closing])) pat97-honeycomb-menu-item {animation-fill-mode:both!important}';
+    testMenu.shadowRoot.append(s);
+  });
+  await waitForRest(page);
+  const negative=await page.screenshot({clip,path:`${output}/${id}-forward-fill-regression.png`});
+  assert.ok(!control.equals(negative),`Pixel test missed forward-fill regression: ${id}`);
+  await page.evaluate(()=>testMenu.remove());
   report.push({id,dpr,theme,count,geometry,pixelParity:true,negativeControlRejected:true,reopened:true,selectedClose:true});
  }
  assert.deepEqual(errors,[],'Browser errors');await context.close();

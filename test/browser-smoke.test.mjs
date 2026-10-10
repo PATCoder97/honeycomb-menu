@@ -360,3 +360,20 @@ test('closing before content readiness never restarts the opening', async () => 
     assert.equal(menu._openingAbortController.signal.aborted,true);
     finishClose(menu);
 });
+
+test('only button-card icons get a stable raster layer and user transforms win', () => {
+    const item = browser.document.createElement('pat97-honeycomb-menu-item');
+    item.hass = browser.document.querySelector('home-assistant').hass;
+    item.config = {entity:'light.room',icon:'mdi:lightbulb',styles:{icon:[{color:'red'}]}};
+    let card = item._createLovelaceCard();
+    assert.equal(card.config.styles.icon[0].transform,'translateZ(0)');
+    assert.equal(card.config.styles.icon[0].color,'red');
+    assert.equal(item.config.styles.icon[0].transform,undefined,'Caller styles were mutated');
+    item.config = {entity:'light.room',styles:{icon:[{transform:'rotate(10deg)'}]}};
+    card = item._createLovelaceCard();
+    assert.equal(card.config.styles.icon[0].transform,'rotate(10deg)');
+    browser.customElements.define('other-icon-card',class extends ButtonCardElement {});
+    item.config = {type:'custom:other-icon-card',entity:'light.room'};
+    card = item._createLovelaceCard();
+    assert.equal(card.config.styles,undefined,'Other custom cards got button-card styles');
+});

@@ -236,7 +236,12 @@ class Pat97HoneycombMenuItem extends LitElement
         var card = createCard(merge({}, {
             type: 'custom:button-card',
             size: '30px',
-            show_name: false
+            show_name: false,
+            // Keep only the icon's raster layer stable when the cell zoom
+            // ends. No scaling/counter-scaling or polygon layer promotion.
+            ...(!this.config.type || this.config.type === 'custom:button-card'
+                ? { styles: { icon: [{ transform: 'translateZ(0)' }] } }
+                : {})
         }, this.config));
         provideHass( card );
 

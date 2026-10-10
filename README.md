@@ -117,7 +117,9 @@ Any other options for `Button:type` | - | - | -
 
 ## Extended layout example
 
-All new interaction features are opt-in. The original six slot assignments are preserved. Shapes use regular hexagons with a height/width ratio of `2 / sqrt(3)` and one row step of `sqrt(3) / 2`. Every perpendicular neighbor gap is `2 × spacing` after the opening animation. Motion follows the upstream module: 500 ms opening/closing zoom and 750 ms bounce for the selected closing button. The module does not scale or brighten cells on ordinary hover/press, inject icon styles, or counter-scale icons; the underlying card retains its own interaction feedback. Opt-in drag highlighting only brightens the selected cell without changing its geometry. Browser layout rounding and edge anti-aliasing can still affect individual pixels.
+All new interaction features are opt-in. The original six slot assignments are preserved. Shapes use regular hexagons with a height/width ratio of `2 / sqrt(3)` and one row step of `sqrt(3) / 2`. Every perpendicular neighbor gap is `2 × spacing` after the opening animation. Motion follows the upstream module: 500 ms opening/closing zoom and 750 ms bounce for the selected closing button. The module does not scale or brighten cells on ordinary hover/press, patch icon shadow DOM, or counter-scale icons; the underlying card retains its own interaction feedback. Opt-in drag highlighting only brightens the selected cell without changing its geometry. Browser layout rounding and edge anti-aliasing can still affect individual pixels.
+
+Default button-card icon styles include `transform: translateZ(0)` to keep the glyph raster layer stable when opening zoom ends. This identity transform does not resize or move the icon, and does not promote the polygon/card layer. Explicit user icon transforms override it; other custom card types are untouched.
 
 Opening animations use backward fill only: delayed buttons stay hidden, but the zoom releases its transform when finished. Closing animations keep forward fill until the menu is removed. This avoids a completed opening zoom changing the resting polygon's edge rasterization.
 
