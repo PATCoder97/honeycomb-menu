@@ -1,6 +1,6 @@
 # PAT97 Honeycomb Menu for Home Assistant
 
-Personal fork of [Honeycomb Menu by @Sian-Lee-SA](https://github.com/Sian-Lee-SA/honeycomb-menu), using Mushroom colors while preserving the original honeycomb shape, layout, animation, behavior, and configuration.
+Personal fork of [Honeycomb Menu by @Sian-Lee-SA](https://github.com/Sian-Lee-SA/honeycomb-menu), using Mushroom colors while preserving the original six-button honeycomb defaults. Optional extended controls add up to 18 buttons, nested menus, a center button, drag selection, shared button defaults, and idle timeout without changing existing YAML.
 
 
 <a href="https://www.paypal.com/donate/?business=A82MM255CXF9L&no_recurring=0&item_name=Donating+will+help+justify+my+time+coding+and+doing+projects+that+also+benifits+others.+Any+amount+is+greatly+appreciated%21&currency_code=AUD"><img src="https://github.com/andreostrovsky/donate-with-paypal/raw/master/blue.svg" height="38"></a>
@@ -76,7 +76,7 @@ fire-dom-event action, you can call the honeycomb menu while passing the config 
 Option          | Values        | Default   | Details
 --              | -             |-          |-
 entity | `any:entity_id` | `card:entity` | This will call actions on the entity (entity_id) defined. If omitted then the card entity will be used.
-buttons | `list[0-5]`: [Button](#button-options) `\| skip \| break` | `null \| template_buttons` | The buttons are your honeycombs :grinning:. There are a max of 6 buttons that you can define. _* note: list indexes start at `0`_. Matching indexes with **template_buttons** will be overridden. Using the string `skip` on an index will use the `template_button` for that index and the string `break` will instead disable that honeycomb position regardless of the `template_button` value for that index.
+buttons | `list[0-17]`: [Button](#button-options) `\| skip \| break` | `null \| template_buttons` | Up to 18 buttons. The original inner six slots are unchanged; the outer ring activates only when more than six visible buttons are configured or a hard outer slot is requested. Matching indexes with **template_buttons** are overridden. `skip` uses the template button and `break` disables that position.
 active | `true \| false \| template` | `false` | Setting this to true will apply active styles based on the entity it's assigned to. You can also choose to use a template and return a boolean value. See [Templating](#templating)
 autoclose | `true \| false` | `true` | Close the menu if a button is pressed
 audio | `any:url_path` | `null` | Point to a audio file that will play when a button has been tapped
@@ -85,7 +85,17 @@ size | `int:px` | `225` | The size in px of the honeycomb menu. Each button item
 spacing | `int:px` | `2` | This will assign the padding in px for each honeycomb item
 variables | `object` | `null` | Variables can be accessed through parent templates and templating code via `variables.foo` with `foo` being the variable name. See [Example](#example-using-variables)
 animation_speed | `int:ms` | `100` | Change the speed of the animation to show the menu, each ms is addition to each button... so 50ms * 5 = 250ms total time (first button is immediate)
+animation_mode | `legacy \| sequential \| paired` | `legacy` | `legacy` preserves the original timing. `sequential` opens clockwise and `paired` animates opposite buttons together.
 style | `mushroom \| classic` | `mushroom` | Keep the original hexagonal style with Mushroom colors, or use the original classic colors.
+button_defaults | `object` | `{}` | Configuration deeply merged into every ring button before the individual button configuration.
+empty_slots | `visible \| hidden` | `visible` | Show disabled hexagons for unused positions or render only configured buttons.
+center_button | `object \| false` | `false` | Optional center button. An empty object creates a `more-info` button for the menu entity.
+center_brightness | `number:%` | `0` | Brightness adjustment for the optional center button.
+drag_select | `true \| false` | `false` | Allow one press-and-drag gesture to select a menu item.
+drag_deadzone | `number:px` | `12` | Required pointer movement before drag selection activates.
+hover_highlight | `true \| false` | `true` | Highlight the item under the pointer while drag selection is active.
+nested_center_back | `true \| false` | `true` | Turn the center button into Back while inside a nested menu.
+idle_timeout | `number:ms` | `0` | Close an inactive menu after this many milliseconds. `0` disables the timeout.
 
 ## `Button` Options
 
@@ -97,11 +107,89 @@ show | `true \| false` | `true` | Whether to display this button. If a parent te
 autoclose | `true \| false` | `honeycomb:autoclose` | Override the honeycomb autoclose property for this button
 audio | `any:url_path` | `honeycomb:audio` | Override the honeycomb audio property for this button
 entity | `any:entity_id` | `honeycomb:entity` | You can define the entity that this button targets. Omitted will resort to the honeycombs entity. An entity ca be used in templates by accessing its variable `entity`
-position | `int` | `null` | The position index to place the button. This is helpful for overriding template buttons.
+position | `int:0-17` | `null` | Legacy zero-based absolute position. New configurations should use `slot`.
+slot | `int:1-18` | `null` | Preferred one-based slot number.
+slot_mode | `soft \| hard` | `soft` | A soft slot moves clockwise when occupied and wraps to the active ring. A hard slot is an absolute physical position and can activate the outer ring.
 icon | `any:icon` | `null` | Only adding here for reference to custom:button-card so you can show an icon for the item
 color | `any:css_color` | var(--pat97-honeycomb-menu-icon-color) | Color of icon or background (depending on custom:button-card config). Leaving the default value allows the theme to handle the color
 show_name | `true \| false` | `false` | Only relevant for cards that support this option
 Any other options for `Button:type` | - | - | -
+
+## Extended layout example
+
+All new interaction features are opt-in. A configuration with six buttons and no new options renders exactly like earlier PAT97 releases.
+
+```yaml
+action: fire-dom-event
+honeycomb_menu:
+  entity: light.living_room
+  idle_timeout: 10000
+  empty_slots: hidden
+  center_button:
+    icon: mdi:lightbulb-group
+    tap_action:
+      action: more-info
+  button_defaults:
+    show_name: false
+  buttons:
+    - icon: mdi:information-outline
+      slot: 1
+      slot_mode: hard
+      tap_action:
+        action: more-info
+    - icon: mdi:lightbulb
+      tap_action:
+        action: toggle
+    - icon: mdi:ceiling-light
+      tap_action:
+        action: toggle
+    - icon: mdi:lamp
+      tap_action:
+        action: toggle
+    - icon: mdi:floor-lamp
+      tap_action:
+        action: toggle
+    - icon: mdi:led-strip-variant
+      tap_action:
+        action: toggle
+    - icon: mdi:light-recessed
+      slot: 13
+      tap_action:
+        action: toggle
+```
+
+The seventh visible button activates the outer ring. Slots `1-6` remain the original inner ring and slots `7-18` belong to the outer ring.
+
+## Nested menu example
+
+A button can open another Honeycomb through the existing `fire-dom-event` action. Set `center_button: {}` on the nested menu to get an automatic Back button, or use `action: honeycomb-back` on any button.
+
+```yaml
+buttons:
+  - icon: mdi:dots-horizontal
+    autoclose: false
+    tap_action:
+      action: fire-dom-event
+      honeycomb_menu:
+        entity: light.living_room
+        center_button: {}
+        buttons:
+          - icon: mdi:arrow-left
+            autoclose: false
+            tap_action:
+              action: honeycomb-back
+          - icon: mdi:close
+            tap_action:
+              action: honeycomb-close
+```
+
+For optional one-gesture selection, add:
+
+```yaml
+drag_select: true
+drag_deadzone: 12
+hover_highlight: true
+```
 
 ## `XYPad` Options
 
@@ -181,7 +269,7 @@ honeycomb_menu:
       data:
         # The word entity will become light.kitchen
         entity_id: entity
-        hue: '${variables.x / 18 * variables.x_percentage}'        
+        hue: '${variables.x / 18 * variables.x_percentage}'
     y:
       service: light.relative_brightnesss
       data:

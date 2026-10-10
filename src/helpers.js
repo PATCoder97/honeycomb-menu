@@ -77,15 +77,15 @@ export function stringToBool( value )
     return !(! value ||  ['undefined', 'false', '0'].includes(value) );
 }
 
-export function provideHass(element) 
+export function provideHass(element)
 {
     if(document.querySelector('home-assistant'))
         return document.querySelector("home-assistant").provideHass(element);
-  
+
     return undefined;
 }
 
-export function lovelace_view() 
+export function lovelace_view()
 {
     let root = document.querySelector("home-assistant");
     root = root && root.shadowRoot;
@@ -103,7 +103,7 @@ export function lovelace_view()
     return root;
 }
 
-export function lovelace_config() 
+export function lovelace_config()
 {
     let root = document.querySelector("home-assistant");
     root = root && root.shadowRoot;
@@ -117,7 +117,7 @@ export function lovelace_config()
     if (root) {
         return root.lovelace.config || null;
     }
-  
+
     return null;
 }
 
@@ -126,21 +126,21 @@ export function honeycomb_menu_templates()
     // Store to a gloval variable to skip dom traversion
     if( window.honeycomb_menu_templates )
         return window.honeycomb_menu_templates;
-    
+
     let lconfig = lovelace_config();
 
     if( ! lconfig )
         return null;
 
     window.honeycomb_menu_templates = lconfig.honeycomb_menu_templates || {};
-    
+
     if( ! lconfig.honeycomb_menu_templates )
         return null;
-        
+
     return lconfig.honeycomb_menu_templates;
 }
 
-function _errorElement(error, origConfig) 
+function _errorElement(error, origConfig)
 {
     const cfg = {
         type: "error",
@@ -158,7 +158,7 @@ function _errorElement(error, origConfig)
     return el;
 }
 
-function _createElement(tag, config) 
+function _createElement(tag, config)
 {
     let el = document.createElement(tag);
     try {
@@ -169,7 +169,7 @@ function _createElement(tag, config)
     return el;
 }
 
-export function createCard(config) 
+export function createCard(config)
 {
     if( ! config || typeof config !== "object" || ! config.type )
         return _errorElement(`No card type configured`, config);

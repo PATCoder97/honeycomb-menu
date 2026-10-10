@@ -3,19 +3,35 @@ import "./pat97-honeycomb-menu-item.js";
 import "./pat97-xy-pad.js";
 import { objectEvalTemplate, getTemplateOrValue, stringToBool, fireEvent, lovelace_view, provideHass, honeycomb_menu_templates } from "./helpers.js";
 
-const hass = document.querySelector('home-assistant').hass;
-
 const merge = require('lodash/merge');
-const omit = require('lodash/omit');
 const split = require('lodash/split');
 const clamp = require('lodash/clamp');
 const _template = require('lodash/template');
 const isEmpty = require('lodash/isEmpty');
 const isString = require('lodash/isString');
-const _defaults = require('lodash/defaults');
+const {
+    computeItemConfig,
+    normalizeMenuConfig,
+    traverseMenuConfig
+} = require('./honeycomb-config.js');
+const {
+    assignButtons,
+    animationStep,
+    buttonPosition,
+    centerPosition,
+    containerMetrics,
+    isPastDragDeadzone
+} = require('./honeycomb-layout.js');
+const {
+    HoneycombHistory,
+    normalizeIdleTimeout
+} = require('./honeycomb-history.js');
 
 const manager = new function() {
     this.honeycomb = null;
+    this.history = new HoneycombHistory(config => merge({}, config));
+    this.pointerDown = false;
+    this.pointerId = null;
     this.position = {
         x: 0,
         y: 0
@@ -23,6 +39,21 @@ const manager = new function() {
     this.handleXYPosition = function(e) {
         this.position.x = (e.type === "touchstart") ? e.touches[0].clientX : e.clientX;
         this.position.y = (e.type === "touchstart") ? e.touches[0].clientY : e.clientY;
+    }.bind(this);
+
+    this.handlePointerDown = function(e) {
+        this.pointerDown = true;
+        this.pointerId = e.pointerId;
+        this.position.x = e.clientX;
+        this.position.y = e.clientY;
+    }.bind(this);
+
+    this.handlePointerUp = function(e) {
+        if( this.pointerId === null || e.pointerId === this.pointerId )
+        {
+            this.pointerDown = false;
+            this.pointerId = null;
+        }
     }.bind(this);
 };
 
@@ -32,13 +63,15 @@ window.honeycomb_menu = (config) => {
     if( honeycombConfig.entity_id && ! honeycombConfig.entity )
         honeycombConfig.entity = honeycombConfig.entity_id;
 
-    // console.dir(honeycombConfig);
-    showHoneycombMenu( honeycombConfig );
+    const nested = !! manager.honeycomb && !! manager.history.currentConfig;
+    showHoneycombMenu( honeycombConfig, { nested } );
 };
 
 document.addEventListener('touchstart', manager.handleXYPosition, false);
 document.addEventListener('mousedown', manager.handleXYPosition, false);
-// document.addEventListener("mousemove", manager.handleXYPosition, false);
+document.addEventListener('pointerdown', manager.handlePointerDown, true);
+document.addEventListener('pointerup', manager.handlePointerUp, true);
+document.addEventListener('pointercancel', manager.handlePointerUp, true);
 
 document.body.addEventListener("ll-custom", e => {
     if(e.detail.honeycomb_menu)
@@ -47,59 +80,54 @@ document.body.addEventListener("ll-custom", e => {
     }
 });
 
-function showHoneycombMenu( _config )
+function showHoneycombMenu( _config, options = {} )
 {
-    // Remove any lingering honeycom menus as there should only be one active at a time
-    if( manager.honeycomb )
-        manager.honeycomb.close();
+    const previous = manager.honeycomb;
 
-    manager.honeycomb = document.createElement('pat97-honeycomb-menu');
-    // Some configs can be non extensible so we make them
-    // extensible
-    manager.honeycomb.setConfig( _config )
-    manager.honeycomb.display( lovelace_view(), manager.position.x, manager.position.y );
-    manager.honeycomb.addEventListener('closing', e => {
-        manager.honeycomb = null;
+    manager.history.open(_config, options);
+
+    if( previous )
+        previous.close();
+
+    const menu = document.createElement('pat97-honeycomb-menu');
+    manager.honeycomb = menu;
+    menu.setConfig( _config );
+    menu.display( lovelace_view(), manager.position.x, manager.position.y );
+    menu.addEventListener('closing', () => {
+        if( manager.honeycomb === menu )
+            manager.honeycomb = null;
     });
 }
 
+function honeycombBack()
+{
+    const previousConfig = manager.history.back();
+
+    if( ! previousConfig )
+        return false;
+
+    showHoneycombMenu(previousConfig);
+    return true;
+}
+
+function honeycombClose()
+{
+    manager.history.clear();
+
+    if( manager.honeycomb )
+        manager.honeycomb.close();
+}
+
+window.honeycomb_menu_back = honeycombBack;
+window.honeycomb_menu_close = honeycombClose;
+
 function traverseConfigs( _config, _buttons )
 {
-	if( ! _buttons )
-	{
-		_buttons = new Array(6);
-		for( let i = 0; i < 6; i++ )
-		{
-			_buttons[i] = new Array();
-		}
-	}
-
-    function bindButtons( _cfg )
-    {
-        if( _cfg.buttons )
-            _cfg.buttons.forEach( (b, i) => {
-                if( b.position )
-                    _buttons[b.position].unshift(b);
-                else
-                    _buttons[i].unshift(b);
-            });
-        return { buttons: _buttons };
-    }
-
-    // Allow non extensible to be a new object that can be extended. Using
-    // merge will also affect sub properties
-    _config = merge({}, _config );
-
-    const honeycomb_templates = honeycomb_menu_templates();
-    if( ! _config.template || ! honeycomb_templates || ! honeycomb_templates[_config.template] )
-        return Object.assign({}, _config, bindButtons( _config ));
-
-    let parentConfig = traverseConfigs( honeycomb_templates[_config.template], _buttons );
-
-    // Delete the template property so the button doesn't hook into it
-    delete _config.template;
-
-    return Object.assign({}, parentConfig, _config, bindButtons( _config ));
+    return traverseMenuConfig(
+        _config,
+        honeycomb_menu_templates(),
+        _buttons || []
+    );
 }
 
 class Pat97HoneycombMenu extends LitElement
@@ -136,20 +164,36 @@ class Pat97HoneycombMenu extends LitElement
             },
             _service: {
                 type: Object
+            },
+            _dragHoverSlot: {
+                type: Number
             }
         }
     }
 
-    constructor() 
+    constructor()
     {
         super();
 
         this.closing = false;
         this.buttons = [];
+        this._rings = {
+            inner: true,
+            outer: false
+        };
         this._service = {
             x: false,
             y: false
-        }
+        };
+        this._dragHoverSlot = -1;
+        this._dragPointerActive = false;
+        this._dragPointerId = null;
+        this._dragStartX = null;
+        this._dragStartY = null;
+        this._idleTimer = null;
+        this._closeFallbackTimer = null;
+        this._boundPointerMove = this._handleGlobalPointerMove.bind(this);
+        this._boundPointerUp = this._handleGlobalPointerUp.bind(this);
     }
 
     static get styles()
@@ -238,6 +282,18 @@ class Pat97HoneycombMenu extends LitElement
                 width: var(--item-size);
                 padding: var(--spacing);
             }
+            pat97-honeycomb-menu-item.center-item {
+                z-index: 2;
+                filter: brightness(var(--pat97-honeycomb-center-brightness, 1));
+            }
+            pat97-honeycomb-menu-item.drag-hover {
+                filter: brightness(1.18);
+                transform: scale3d(1.08, 1.08, 1.08);
+                z-index: 3;
+            }
+            pat97-honeycomb-menu-item.center-item.drag-hover {
+                filter: brightness(calc(var(--pat97-honeycomb-center-brightness, 1) * 1.18));
+            }
             pat97-honeycomb-menu-item, pat97-xy-pad {
                 animation-duration: 0.5s;
                 animation-fill-mode: both;
@@ -250,21 +306,6 @@ class Pat97HoneycombMenu extends LitElement
                 animation-duration: 0.75s;
                 animation-name: bounceOut;
             }
-            pat97-honeycomb-menu-item:nth-of-type(1), pat97-honeycomb-menu-item:nth-of-type(5) {
-                left: calc( var(--item-size) * 0.5 );
-            }
-            pat97-honeycomb-menu-item:nth-of-type(2), pat97-honeycomb-menu-item:nth-of-type(4) {
-                left: calc( var(--item-size) * 1.5);
-            }
-            pat97-honeycomb-menu-item:nth-of-type(3), pat97-honeycomb-menu-item:nth-of-type(6) {
-                top: calc( var(--item-size) * 0.865);
-            }
-            pat97-honeycomb-menu-item:nth-of-type(4), pat97-honeycomb-menu-item:nth-of-type(5) {
-                top: calc( var(--item-size) * 1.725);
-            }
-            pat97-honeycomb-menu-item:nth-of-type(3) {
-                left: calc( var(--item-size) * 2);
-            }
             pat97-xy-pad {
                 width: var(--container-width);
                 height: var(--container-height);
@@ -273,6 +314,9 @@ class Pat97HoneycombMenu extends LitElement
 
     render()
     {
+        const centerConfig = this._computeCenterConfig();
+        const centerPos = centerPosition(this._rings);
+
         return html`
             <div id="shade" class="shade" @click=${this._handleShadeClick}></div>
 
@@ -291,14 +335,51 @@ class Pat97HoneycombMenu extends LitElement
                 </pat97-xy-pad>`:''}
 
             <div id="honeycombs" class="honeycombs">
-                ${this.buttons.map((v, i) => html`
-                <pat97-honeycomb-menu-item
-                    style="animation-delay: ${this._computeAnimateDelay(i)};"
-                    .hass=${this.hass}
-                    .menuStyle=${this.config.style}
-                    .config=${this._computeItemConfig(v)}
-                    @action=${this._handleItemAction}>
-                </pat97-honeycomb-menu-item>`)}
+                ${centerConfig ? html`
+                    <pat97-honeycomb-menu-item
+                        class="center-item ${this._dragHoverSlot === 18 ? 'drag-hover' : ''}"
+                        data-honeycomb-slot="center"
+                        @pointerenter=${() => this._setDragHoverSlot(18)}
+                        @pointerleave=${() => this._clearDragHoverSlot(18)}
+                        style="
+                            animation-delay: ${this._computeAnimateDelay(0)};
+                            left: calc(var(--item-size) * ${centerPos.x});
+                            top: calc(var(--item-size) * ${centerPos.y});
+                        "
+                        .hass=${this.hass}
+                        .menuStyle=${this.config.style}
+                        .config=${centerConfig}
+                        @action=${this._handleItemAction}>
+                    </pat97-honeycomb-menu-item>
+                ` : ''}
+
+                ${this.buttons.map((button, slot) => {
+                    if( button === undefined )
+                        return '';
+
+                    const position = buttonPosition(slot, this._rings);
+
+                    if( ! position )
+                        return '';
+
+                    return html`
+                        <pat97-honeycomb-menu-item
+                            class="${this._dragHoverSlot === slot ? 'drag-hover' : ''}"
+                            data-honeycomb-slot="${slot}"
+                            @pointerenter=${() => this._setDragHoverSlot(slot)}
+                            @pointerleave=${() => this._clearDragHoverSlot(slot)}
+                            style="
+                                animation-delay: ${this._computeButtonAnimateDelay(slot)};
+                                left: calc(var(--item-size) * ${position.x});
+                                top: calc(var(--item-size) * ${position.y});
+                            "
+                            .hass=${this.hass}
+                            .menuStyle=${this.config.style}
+                            .config=${this._computeItemConfig(button)}
+                            @action=${this._handleItemAction}>
+                        </pat97-honeycomb-menu-item>
+                    `;
+                })}
             </div>`;
     }
 
@@ -306,30 +387,11 @@ class Pat97HoneycombMenu extends LitElement
     {
         provideHass(this);
 
-        _defaults(config, {
-            action: 'hold',
-            entity: null,
-            active: false,
-            autoclose: true,
-            audio: false,
-            variables: {},
-            size: 225,
-            spacing: 2,
-            animation_speed: 100,
-            style: 'mushroom'
-        });
-        if( ! ['mushroom', 'classic'].includes(config.style) )
-            config.style = 'mushroom';
-        this.config = config;
+        this.config = normalizeMenuConfig(config);
         this.setAttribute('menu-style', this.config.style);
-        // These aren't perfect calculations but produces the result we want
-        // honey combs are not 1:1 ratio's
-        let itemSize = this.config.size / 3.586;
-        this.sizes = {
-            item: itemSize,
-            containerWidth: itemSize * 3,
-            containerHeight: itemSize * 2.9
-        };
+
+        this._assignButtons();
+        this.sizes = containerMetrics(this.config.size, this._rings);
 
         if( this.config.xy_pad )
         {
@@ -341,7 +403,6 @@ class Pat97HoneycombMenu extends LitElement
             }
         }
 
-        this._assignButtons();        
     }
 
     display(_view, _x, _y)
@@ -352,6 +413,22 @@ class Pat97HoneycombMenu extends LitElement
         this.view.append( this );
 
         this._setPosition( _x, _y );
+
+        if( this.config.drag_select )
+        {
+            if( manager.pointerDown )
+            {
+                this._dragPointerId = manager.pointerId;
+                this._dragStartX = manager.position.x;
+                this._dragStartY = manager.position.y;
+            }
+
+            document.addEventListener('pointermove', this._boundPointerMove, true);
+            document.addEventListener('pointerup', this._boundPointerUp, true);
+            document.addEventListener('pointercancel', this._boundPointerUp, true);
+        }
+
+        this._resetIdleTimeout();
     }
 
     firstUpdated()
@@ -365,55 +442,108 @@ class Pat97HoneycombMenu extends LitElement
             return;
 
         this.closing = true;
+        this._cleanupRuntime();
 
-        let ele = _item || this.shadowRoot.querySelectorAll('pat97-honeycomb-menu-item')[5];
+        const items = this.shadowRoot
+            ? this.shadowRoot.querySelectorAll('pat97-honeycomb-menu-item')
+            : [];
+        const ele = _item || items[items.length - 1];
         if( _item )
         {
             _item.setAttribute('selected', '');
-            _item.setAttribute('style', `animation-delay: ${this._computeAnimateDelay(3)};`);
+            _item.style.animationDelay = this._computeAnimateDelay(3);
         }
 
         fireEvent(this, 'closing', { item: _item });
-        // Remove shade div earlier to allow clicking of other lovelace elements while the animation continues
-        this.shadowRoot.querySelector('#shade').addEventListener('animationend', function(e) {
-            this.remove();
-        });
 
-        ele.addEventListener('animationend', e => {
+        let finished = false;
+        const finish = () => {
+            if( finished )
+                return;
+            finished = true;
+            clearTimeout(this._closeFallbackTimer);
+            this._closeFallbackTimer = null;
             this.remove();
             fireEvent(this, 'closed', { item: _item });
-        });
+        };
+        const shade = this.shadowRoot && this.shadowRoot.querySelector('#shade');
+
+        if( shade )
+            shade.addEventListener('animationend', () => shade.remove(), { once: true });
+
+        this._closeFallbackTimer = setTimeout(
+            finish,
+            Math.max(1000, (Number(this.config.animation_speed) || 0) * 18 + 1000)
+        );
+
+        if( ele )
+            ele.addEventListener('animationend', finish, { once: true });
+        else
+            finish();
+    }
+
+    disconnectedCallback()
+    {
+        this._cleanupRuntime();
+        super.disconnectedCallback();
     }
 
     _assignButtons()
     {
-        this.buttons = [];
-        for( let i = 0; i < 6; i++ )
+        const resolved = [];
+        const stacks = Array.isArray(this.config.buttons) ? this.config.buttons : [];
+
+        for( let i = 0; i < stacks.length; i++ )
         {
+            const stack = stacks[i];
+
+            if( ! Array.isArray(stack) )
+                continue;
+
             let button = {};
 
-			for( let b of this.config.buttons[i] )
-			{
-				if( b.show !== undefined )
+            for( const candidate of stack )
+            {
+                if( candidate === 'break' )
                 {
-                    b.show = stringToBool( getTemplateOrValue( this.hass, this.hass.states[this.config.entity], this.config.variables, b.show ) );
-                } else if( b != 'break' && b != 'skip') {
-                    b.show = true;
+                    button = 'break';
+                    break;
                 }
 
-                if( b != 'break' && (! b.show || b == 'skip') )
+                if( candidate === 'skip' )
                     continue;
-                    
-				button = b;
-				break;
-			}
+
+                const cloned = merge({}, candidate);
+                const entityState = this.hass && this.hass.states
+                    ? this.hass.states[this.config.entity]
+                    : undefined;
+                const show = cloned.show === undefined
+                    ? true
+                    : stringToBool(getTemplateOrValue(
+                        this.hass,
+                        entityState,
+                        this.config.variables,
+                        cloned.show
+                    ));
+
+                if( ! show )
+                    continue;
+
+                button = cloned;
+                break;
+            }
 
             if( button == 'break' )
                 button = {};
 
-            // Clone to allow writable object from button-card
-            this.buttons[i] = merge({}, button);
+            if( ! isEmpty(button) )
+                resolved.push({ button, sourceIndex: i });
         }
+
+        const layout = assignButtons(resolved, this.config.empty_slots);
+        this.buttons = layout.buttons;
+        this._rings = layout.rings;
+        layout.warnings.forEach(message => console.warn(`[PAT97 Honeycomb Menu] ${message}`));
     }
 
     _setPosition( _x, _y )
@@ -454,6 +584,11 @@ class Pat97HoneycombMenu extends LitElement
         this.style.setProperty('--container-height', `${this.sizes.containerHeight}px`);
 
         this.style.setProperty('--spacing', `${this.config.spacing}px`);
+        const centerBrightness = Number(this.config.center_brightness);
+        const centerBrightnessFactor = Number.isFinite(centerBrightness)
+            ? Math.max(0, 1 + (centerBrightness / 100))
+            : 1;
+        this.style.setProperty('--pat97-honeycomb-center-brightness', `${centerBrightnessFactor}`);
 
         this._setCssVarProperty('--paper-item-icon-color', '--pat97-honeycomb-menu-icon-color');
         this._setCssVarProperty('--paper-item-icon-active-color', '--pat97-honeycomb-menu-icon-active-color');
@@ -473,18 +608,235 @@ class Pat97HoneycombMenu extends LitElement
     _handleShadeClick(e)
     {
         e.stopPropagation();
+        manager.history.clear();
         this.close();
     }
 
     _handleItemAction(e)
     {
-        if( ! e.detail.item )
+        if( ! e.detail || ! e.detail.item )
             return;
 
-        this._playButtonSound( e.detail.item );
+        const item = e.detail.item;
+        const actionType = e.detail.action || 'tap';
+        const actionKey = actionType === 'hold'
+            ? 'hold_action'
+            : actionType === 'double_tap'
+                ? 'double_tap_action'
+                : 'tap_action';
+        const configuredAction = item.config && item.config[actionKey]
+            ? item.config[actionKey].action
+            : null;
+
+        if( configuredAction === 'honeycomb-back' )
+        {
+            e.stopPropagation();
+            honeycombBack();
+            return;
+        }
+
+        if( configuredAction === 'honeycomb-close' )
+        {
+            e.stopPropagation();
+            honeycombClose();
+            return;
+        }
+
+        this._playButtonSound( item );
 
         if( e.detail.autoclose )
-            this.close(e.detail.item);
+        {
+            manager.history.clear();
+            this.close(item);
+            return;
+        }
+
+        this._resetIdleTimeout();
+    }
+
+    _setDragHoverSlot(slot)
+    {
+        if( ! this.config.drag_select || ! this.config.hover_highlight )
+            return;
+
+        this._dragHoverSlot = slot;
+    }
+
+    _clearDragHoverSlot(slot)
+    {
+        if( this._dragHoverSlot === slot )
+            this._dragHoverSlot = -1;
+    }
+
+    _findMenuItemAtPoint(x, y)
+    {
+        if( ! this.shadowRoot || ! this.shadowRoot.elementFromPoint )
+            return null;
+
+        let element = this.shadowRoot.elementFromPoint(x, y);
+
+        while( element && element !== this.shadowRoot )
+        {
+            if( element.tagName && element.tagName.toLowerCase() === 'pat97-honeycomb-menu-item' )
+                return element;
+
+            element = element.parentElement;
+        }
+
+        return null;
+    }
+
+    _handleGlobalPointerMove(e)
+    {
+        if( ! this.config.drag_select )
+            return;
+        if( e.pointerType === 'mouse' && e.buttons === 0 )
+            return;
+        if( this._dragPointerId !== null && e.pointerId !== this._dragPointerId )
+            return;
+
+        if( ! this._dragPointerActive )
+        {
+            if( this._dragStartX === null || this._dragStartY === null )
+            {
+                this._dragStartX = e.clientX;
+                this._dragStartY = e.clientY;
+            }
+
+            if( ! isPastDragDeadzone(
+                this._dragStartX,
+                this._dragStartY,
+                e.clientX,
+                e.clientY,
+                this.config.drag_deadzone
+            ) )
+                return;
+
+            this._dragPointerActive = true;
+        }
+
+        this._dragPointerId = e.pointerId;
+        this._resetIdleTimeout();
+
+        const item = this._findMenuItemAtPoint(e.clientX, e.clientY);
+
+        if( ! item )
+        {
+            this._dragHoverSlot = -1;
+            return;
+        }
+
+        const slot = item.dataset.honeycombSlot === 'center'
+            ? 18
+            : Number(item.dataset.honeycombSlot);
+        this._dragHoverSlot = Number.isFinite(slot) ? slot : -1;
+    }
+
+    _handleGlobalPointerUp(e)
+    {
+        if( ! this.config.drag_select )
+            return;
+        if( this._dragPointerId !== null && e.pointerId !== this._dragPointerId )
+            return;
+
+        if( ! this._dragPointerActive )
+        {
+            this._resetDragState();
+            return;
+        }
+
+        const item = this._findMenuItemAtPoint(e.clientX, e.clientY);
+        this._resetDragState();
+
+        if( item )
+        {
+            e.preventDefault();
+            e.stopPropagation();
+            this._triggerMenuItemTap(item);
+        }
+    }
+
+    _resetDragState()
+    {
+        this._dragPointerActive = false;
+        this._dragPointerId = null;
+        this._dragStartX = null;
+        this._dragStartY = null;
+        this._dragHoverSlot = -1;
+    }
+
+    _triggerMenuItemTap(item)
+    {
+        const wrappedCard = item.shadowRoot
+            ? item.shadowRoot.querySelector('#item > *')
+            : null;
+
+        if( ! wrappedCard )
+        {
+            console.warn('[PAT97 Honeycomb Menu] Unable to find the wrapped card for drag selection.');
+            return;
+        }
+
+        let actionTarget = wrappedCard;
+
+        if( wrappedCard.shadowRoot )
+        {
+            const candidate = wrappedCard.shadowRoot.querySelector('ha-card') ||
+                wrappedCard.shadowRoot.querySelector('[role="button"]');
+
+            if( candidate )
+                actionTarget = candidate;
+        }
+
+        actionTarget.dispatchEvent(new CustomEvent('action', {
+            bubbles: true,
+            composed: true,
+            detail: { action: 'tap' }
+        }));
+    }
+
+    _clearIdleTimeout()
+    {
+        if( this._idleTimer )
+        {
+            clearTimeout(this._idleTimer);
+            this._idleTimer = null;
+        }
+    }
+
+    _resetIdleTimeout()
+    {
+        this._clearIdleTimeout();
+
+        const timeout = normalizeIdleTimeout(this.config && this.config.idle_timeout);
+
+        if( timeout === 0 || this.closing )
+            return;
+
+        this._idleTimer = setTimeout(() => {
+            this._idleTimer = null;
+
+            if( this.closing )
+                return;
+
+            manager.history.clear();
+            this.close();
+        }, timeout);
+    }
+
+    _cleanupRuntime()
+    {
+        this._clearIdleTimeout();
+        document.removeEventListener('pointermove', this._boundPointerMove, true);
+        document.removeEventListener('pointerup', this._boundPointerUp, true);
+        document.removeEventListener('pointercancel', this._boundPointerUp, true);
+        this._resetDragState();
+
+        if( this._closeFallbackTimer )
+        {
+            clearTimeout(this._closeFallbackTimer);
+            this._closeFallbackTimer = null;
+        }
     }
 
     _playButtonSound( _item )
@@ -555,7 +907,40 @@ class Pat97HoneycombMenu extends LitElement
     {
         if( isEmpty(item) )
             return item;
-        return omit( merge( {}, this.config, item ), ['buttons', 'size', 'action', 'xy_pad', 'spacing'] );
+
+        return computeItemConfig(this.config, item);
+    }
+
+    _computeCenterConfig()
+    {
+        if( this.config.center_button === false )
+            return null;
+
+        const nestedDefault = manager.history.stack.length > 0 && this.config.nested_center_back
+            ? {
+                entity: this.config.entity,
+                active: false,
+                autoclose: false,
+                icon: 'mdi:arrow-left',
+                tap_action: { action: 'honeycomb-back' }
+            }
+            : {
+                entity: this.config.entity,
+                active: this.config.active,
+                autoclose: true,
+                tap_action: { action: 'more-info' }
+            };
+
+        return this._computeItemConfig(merge(
+            {},
+            nestedDefault,
+            this.config.center_button || {}
+        ));
+    }
+
+    _computeButtonAnimateDelay(slot)
+    {
+        return this._computeAnimateDelay(animationStep(slot, this.config.animation_mode));
     }
 
     _computeAnimateDelay( i )

@@ -8,12 +8,18 @@
  * @License: GPL-3
  */
 const path = require('path');
+const TerserPlugin = require('terser-webpack-plugin');
 
 module.exports = {
     entry: './src/pat97-honeycomb-menu.js',
     mode: 'production',
+    optimization: {
+        concatenateModules: false,
+        minimizer: [new TerserPlugin({ cache: false })]
+    },
     output: {
         filename: 'pat97-honeycomb-menu.js',
-        path: path.resolve(__dirname)
+        path: path.resolve(__dirname),
+        hashFunction: 'sha256'
     }
 };

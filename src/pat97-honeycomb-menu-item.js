@@ -168,7 +168,7 @@ class Pat97HoneycombMenuItem extends LitElement
             #item > * {
                 height: 100%;
             }
-            
+
             :host([disabled]) #item {
                 background: var(--pat97-honeycomb-menu-disabled, #9a9a9a6e);
             }
@@ -238,9 +238,9 @@ class Pat97HoneycombMenuItem extends LitElement
         {
             if( ! this.config.styles )
                 this.config.styles = {}
-            if( ! Array.isArray(this.config.styles.card) )                
+            if( ! Array.isArray(this.config.styles.card) )
                 this.config.styles.card = [];
-            
+
             this.config.styles.card.push({
                 height: '100%',
                 position: 'fixed',
@@ -248,7 +248,7 @@ class Pat97HoneycombMenuItem extends LitElement
             });
         }
 
-        var card = createCard(merge({}, {    
+        var card = createCard(merge({}, {
             type: 'custom:button-card',
             size: '30px',
             show_name: false
