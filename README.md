@@ -121,6 +121,8 @@ All new interaction features are opt-in. The original six slot assignments are p
 
 Opening animations use backward fill only: delayed buttons stay hidden, but the zoom releases its transform when finished. Closing animations keep forward fill until the menu is removed. This avoids a completed opening zoom changing the resting polygon's edge rasterization.
 
+Before opening, the menu waits for card rendering and nested HA SVG icons to settle. Cold icon loading can delay the first opening; a 1500 ms fallback prevents a missing/custom icon from blocking the menu indefinitely. Closing or removing a pending menu cancels the opening. This readiness step does not change hexagon geometry or remove the opening/closing effects.
+
 ```yaml
 action: fire-dom-event
 honeycomb_menu:

@@ -348,3 +348,15 @@ test('public API opens a nested menu, creates an automatic center Back button an
         finishClose(menu);
     assert.ok([...view.querySelectorAll('pat97-honeycomb-menu')].every(menu => ! menu.isConnected));
 });
+
+test('closing before content readiness never restarts the opening', async () => {
+    const menu = browser.document.createElement('pat97-honeycomb-menu');
+    menu.setConfig({entity:'light.room',buttons:[[{icon:'mdi:lightbulb'}]]});
+    menu.display(makeView(),500,400);
+    await menu.updateComplete;
+    menu.close();
+    await new Promise(resolve => setTimeout(resolve,40));
+    assert.equal(menu.hasAttribute('opening-ready'),false);
+    assert.equal(menu._openingAbortController.signal.aborted,true);
+    finishClose(menu);
+});

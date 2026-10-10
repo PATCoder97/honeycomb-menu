@@ -100,6 +100,10 @@
       const card = item.shadowRoot.querySelector('button-card');
       if( card ) await card.updateComplete;
     }));
+    if( options.animations ) {
+      while( !menu.hasAttribute('opening-ready') )
+        await new Promise(resolve => setTimeout(resolve, 16));
+    }
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     window.testMenu = menu;
     return {

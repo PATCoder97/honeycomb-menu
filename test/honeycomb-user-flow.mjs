@@ -19,7 +19,7 @@ const report=[];
 async function waitForRest(page) {
   await page.waitForFunction(() => {
     const menu=document.querySelector('home-assistant').shadowRoot.querySelector('home-assistant-main').shadowRoot.querySelector('partial-panel-resolver').shadowRoot.querySelector('ha-panel-lovelace').shadowRoot.querySelector('hui-root').shadowRoot.querySelector('hui-view').querySelector('pat97-honeycomb-menu');
-    if(!menu?.shadowRoot?.querySelector('pat97-honeycomb-menu-item')) return false;
+    if(!menu?.hasAttribute('opening-ready') || !menu.shadowRoot?.querySelector('pat97-honeycomb-menu-item')) return false;
     window.testMenu=menu;
     return [...menu.shadowRoot.querySelectorAll('*')].flatMap(e=>e.getAnimations()).every(a=>a.playState==='finished' || a.playState==='idle');
   });

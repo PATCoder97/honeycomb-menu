@@ -1,6 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import "./pat97-honeycomb-menu-item.js";
 import "./pat97-xy-pad.js";
+import { waitForContent } from './honeycomb-ready.js';
 import { objectEvalTemplate, getTemplateOrValue, stringToBool, fireEvent, lovelace_view, provideHass, honeycomb_menu_templates } from "./helpers.js";
 
 const merge = require('lodash/merge');
@@ -176,6 +177,7 @@ class Pat97HoneycombMenu extends LitElement
         super();
 
         this.closing = false;
+        this._openingAbortController = new AbortController();
         this.buttons = [];
         this._rings = {
             inner: true,
@@ -299,6 +301,12 @@ class Pat97HoneycombMenu extends LitElement
                    opening ends. Forward fill changes resting edge pixels. */
                 animation-fill-mode: backwards;
                 animation-name: zoomIn;
+            }
+            :host(:not([opening-ready]):not([closing])) pat97-honeycomb-menu-item,
+            :host(:not([opening-ready]):not([closing])) pat97-xy-pad {
+                visibility: hidden;
+                animation-name: none;
+                pointer-events: none;
             }
             :host([closing]) pat97-honeycomb-menu-item, :host([closing]) pat97-xy-pad {
                 animation-fill-mode: both;
@@ -436,6 +444,14 @@ class Pat97HoneycombMenu extends LitElement
     firstUpdated()
     {
         this._setCssVars();
+        this._prepareOpening();
+    }
+
+    async _prepareOpening()
+    {
+        const ready = await waitForContent(this.shadowRoot, this._openingAbortController.signal);
+        if( ready && this.isConnected && !this.closing )
+            this.setAttribute('opening-ready', '');
     }
 
     close( _item = null )
@@ -831,6 +847,7 @@ class Pat97HoneycombMenu extends LitElement
 
     _cleanupRuntime()
     {
+        this._openingAbortController.abort();
         this._clearIdleTimeout();
         document.removeEventListener('pointermove', this._boundPointerMove, true);
         document.removeEventListener('pointerup', this._boundPointerUp, true);
