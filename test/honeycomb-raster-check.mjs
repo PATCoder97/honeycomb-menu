@@ -100,6 +100,33 @@ try {
     await page.mouse.move(900,700);
     await page.waitForFunction(() => getComputedStyle(testMenu.shadowRoot.querySelector('.center-item')).transform === 'none');
     checkGeometry(await page.evaluate(() => measureGeometry()), 42);
+    // Bounds cannot detect compositor-induced seams. Compare the actual edge
+    // pixels against an unpromoted polygon, masking only the icon interiors.
+    const edgeShotOptions = {
+      clip: { x:10, y:10, width:500, height:500 },
+      mask: [page.locator('pat97-honeycomb-menu-item ha-state-icon, pat97-honeycomb-menu-item ha-icon')]
+    };
+    await page.evaluate(() => {
+      const style = document.createElement('style');
+      style.id = 'edge-raster-reference';
+      style.textContent = 'pat97-honeycomb-menu-item { will-change: auto !important; backface-visibility: visible !important; }';
+      testMenu.shadowRoot.append(style);
+    });
+    const edgeReference = await page.screenshot({ ...edgeShotOptions, path:`${output}/edge-reference-dpr${dpr}.png` });
+    await page.evaluate(() => testMenu.shadowRoot.querySelector('#edge-raster-reference').remove());
+    assert.ok(edgeReference.equals(await page.screenshot(edgeShotOptions)), 'Resting edge pixels differ from unpromoted polygons');
+    // The 0.16.8 layer promotion regression must be detected, even though its
+    // measured geometry was identical. DPR 1 exposes these thin seams clearly.
+    if(dpr === 1) {
+      await page.evaluate(() => {
+        const style = document.createElement('style');
+        style.id = 'edge-raster-negative';
+        style.textContent = 'pat97-honeycomb-menu-item { will-change: transform, filter !important; backface-visibility: hidden !important; }';
+        testMenu.shadowRoot.append(style);
+      });
+      assert.ok(!edgeReference.equals(await page.screenshot({ ...edgeShotOptions, path:`${output}/edge-layer-regression-dpr${dpr}.png` })), 'Pixel check missed the polygon layer regression');
+      await page.evaluate(() => testMenu.shadowRoot.querySelector('#edge-raster-negative').remove());
+    }
     // Sample live frames, including reversing before the zoom has completed
     // and crossing into a neighboring cell. Endpoint-only tests miss snapping.
     await page.evaluate(() => {
@@ -145,6 +172,7 @@ try {
     }
     assert.ok(intermediateScales.size >= 3, 'Zoom must interpolate, not jump between endpoints');
     checkGeometry(await page.evaluate(() => measureGeometry()), 42);
+    assert.ok(edgeReference.equals(await page.screenshot({ ...edgeShotOptions, path:`${output}/edge-after-hover-dpr${dpr}.png` })), 'Hover left different resting edge pixels');
     // Negative controls: the verifier must reject the two previous regressions.
     await page.evaluate(() => {
       for( const item of testMenu.shadowRoot.querySelectorAll('pat97-honeycomb-menu-item') ) {
@@ -166,5 +194,5 @@ try {
     await context.close();
   }
   await writeFile(`${output}/report.json`, JSON.stringify(report,null,2));
-  console.log(`PASS: ${report.length} actual renders; six edges and neighbor gaps within ${tolerance} CSS px; hover/press/drag-hover and negative controls at DPR 1/2. Report: ${output}`);
+  console.log(`PASS: ${report.length} actual renders; six edges and neighbor gaps within ${tolerance} CSS px; hover/press/drag-hover, resting edge pixel parity and negative controls at DPR 1/2. Report: ${output}`);
 } finally { await browser.close(); }

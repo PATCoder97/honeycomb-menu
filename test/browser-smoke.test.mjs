@@ -227,6 +227,8 @@ test('extended render supports seven visible slots, center button, defaults and 
     assert.equal(menu.style.getPropertyValue('--spacing'), `${menu.sizes.spacing}px`);
 
     const wrappedCard = ringItems[0].shadowRoot.querySelector('#item > *');
+    assert.equal(wrappedCard.config.styles.icon[0]['will-change'], 'transform');
+    assert.equal(wrappedCard.config.styles.icon[0]['backface-visibility'], 'hidden');
     const actionTarget = wrappedCard.shadowRoot.querySelector('ha-card');
     let action;
     actionTarget.addEventListener('action', event => action = event.detail.action);
@@ -275,8 +277,8 @@ test('center close uses the selected animation and cards keep a regular hexagon 
     assert.match(menuStyles, /@media\s*\(hover:\s*hover\)\s*and\s*\(pointer:\s*fine\)/);
     assert.match(menuStyles, /:not\(\.drag-hover\):not\(\[disabled\]\):hover/);
     assert.match(menuStyles, /filter:\s*brightness\(1\.08\)/);
-    assert.match(menuStyles, /will-change:\s*transform,\s*filter/);
-    assert.match(menuStyles, /backface-visibility:\s*hidden/);
+    assert.doesNotMatch(menuStyles, /will-change\s*:/);
+    assert.doesNotMatch(menuStyles, /backface-visibility\s*:/);
     assert.match(menuStyles, /transition:\s*transform 220ms cubic-bezier\(0\.2, 0, 0\.2, 1\),\s*filter 220ms cubic-bezier\(0\.2, 0, 0\.2, 1\)/);
     assert.match(menuStyles, /scale3d\(1\.04,\s*1\.04,\s*1\.04\)/);
 

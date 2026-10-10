@@ -286,10 +286,8 @@ class Pat97HoneycombMenu extends LitElement
                 width: var(--item-size);
                 padding: var(--spacing);
                 transform-origin: center;
-                /* Keep the icon's compositing layer stable when hover starts,
-                   reverses, or ends. Do not alter the resting hexagon size. */
-                will-change: transform, filter;
-                backface-visibility: hidden;
+                /* Do not force the polygon onto a permanent GPU layer:
+                   that changes edge rasterization even at rest. */
                 transition: transform 220ms cubic-bezier(0.2, 0, 0.2, 1), filter 220ms cubic-bezier(0.2, 0, 0.2, 1);
             }
             pat97-honeycomb-menu-item.center-item {

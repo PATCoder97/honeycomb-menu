@@ -231,6 +231,14 @@ class Pat97HoneycombMenuItem extends LitElement
                 position: 'relative',
                 padding: '0'
             });
+            if( ! Array.isArray(this.config.styles.icon) )
+                this.config.styles.icon = [];
+            // Stabilize only the icon, not the polygon's edge rasterization.
+            // Explicit user icon styles still take precedence.
+            this.config.styles.icon.unshift({
+                'will-change': 'transform',
+                'backface-visibility': 'hidden'
+            });
         }
 
         var card = createCard(merge({}, {
