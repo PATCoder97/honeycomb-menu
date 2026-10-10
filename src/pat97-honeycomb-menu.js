@@ -1,7 +1,7 @@
 import { LitElement, html, css } from 'lit';
-import "./honeycomb-menu-item.js";
-import "./xy-pad.js";
-import { objectEvalTemplate, getTemplateOrValue, stringToBool, fireEvent, lovelace_view, provideHass, honeycomb_menu_templates } from "./helpers.js";
+import "./pat97-honeycomb-menu-item.js";
+import "./pat97-xy-pad.js";
+import { objectEvalTemplate, getTemplateOrValue, stringToBool, fireEvent, lovelace_view, provideHass, pat97_honeycomb_menu_templates } from "./helpers.js";
 
 const hass = document.querySelector('home-assistant').hass;
 
@@ -26,7 +26,7 @@ const manager = new function() {
     }.bind(this);
 };
 
-window.honeycomb_menu = (config) => {
+window.pat97_honeycomb_menu = (config) => {
     var honeycombConfig = traverseConfigs( config );
 
     if( honeycombConfig.entity_id && ! honeycombConfig.entity )
@@ -41,9 +41,9 @@ document.addEventListener('mousedown', manager.handleXYPosition, false);
 // document.addEventListener("mousemove", manager.handleXYPosition, false);
 
 document.body.addEventListener("ll-custom", e => {
-    if(e.detail.honeycomb_menu)
+    if(e.detail.pat97_honeycomb_menu)
     {
-        window.honeycomb_menu( e.detail.honeycomb_menu );
+        window.pat97_honeycomb_menu( e.detail.pat97_honeycomb_menu );
     }
 });
 
@@ -53,7 +53,7 @@ function showHoneycombMenu( _config )
     if( manager.honeycomb )
         manager.honeycomb.close();
 
-    manager.honeycomb = document.createElement('honeycomb-menu');
+    manager.honeycomb = document.createElement('pat97-honeycomb-menu');
     // Some configs can be non extensible so we make them
     // extensible
     manager.honeycomb.setConfig( _config )
@@ -90,7 +90,7 @@ function traverseConfigs( _config, _buttons )
     // merge will also affect sub properties
     _config = merge({}, _config );
 
-    const honeycomb_templates = honeycomb_menu_templates();
+    const honeycomb_templates = pat97_honeycomb_menu_templates();
     if( ! _config.template || ! honeycomb_templates || ! honeycomb_templates[_config.template] )
         return Object.assign({}, _config, bindButtons( _config ));
 
@@ -102,11 +102,11 @@ function traverseConfigs( _config, _buttons )
     return Object.assign({}, parentConfig, _config, bindButtons( _config ));
 }
 
-class HoneycombMenu extends LitElement
+class Pat97HoneycombMenu extends LitElement
 {
     static get is()
     {
-        return 'honeycomb-menu';
+        return 'pat97-honeycomb-menu';
     }
 
     static get properties()
@@ -220,6 +220,11 @@ class HoneycombMenu extends LitElement
                 animation-fill-mode: both;
                 animation-name: fadeIn;
             }
+            :host([menu-style="mushroom"]) .shade {
+                background: rgba(0, 0, 0, 0.24);
+                -webkit-backdrop-filter: blur(2px);
+                backdrop-filter: blur(2px);
+            }
             :host([closing]) .shade {
                 animation-name: fadeOut;
                 animation-duration: 500ms;
@@ -231,41 +236,45 @@ class HoneycombMenu extends LitElement
                 height: var(--container-height);
                 pointer-events: none;
             }
-            honeycomb-menu-item {
+            :host([menu-style="mushroom"]) .honeycombs {
+                --filter-color: rgba(0, 0, 0, 0.18);
+                filter: drop-shadow(0 6px 12px var(--filter-color));
+            }
+            pat97-honeycomb-menu-item {
                 position: absolute;
                 pointer-events: all;
                 box-sizing: border-box;
                 width: var(--item-size);
                 padding: var(--spacing);
             }
-            honeycomb-menu-item, xy-pad {
+            pat97-honeycomb-menu-item, pat97-xy-pad {
                 animation-duration: 0.5s;
                 animation-fill-mode: both;
                 animation-name: zoomIn;
             }
-            :host([closing]) honeycomb-menu-item, :host([closing]) xy-pad {
+            :host([closing]) pat97-honeycomb-menu-item, :host([closing]) pat97-xy-pad {
                 animation-name: zoomOut;
             }
-            :host([closing]) honeycomb-menu-item[selected] {
+            :host([closing]) pat97-honeycomb-menu-item[selected] {
                 animation-duration: 0.75s;
                 animation-name: bounceOut;
             }
-            honeycomb-menu-item:nth-of-type(1), honeycomb-menu-item:nth-of-type(5) {
+            pat97-honeycomb-menu-item:nth-of-type(1), pat97-honeycomb-menu-item:nth-of-type(5) {
                 left: calc( var(--item-size) * 0.5 );
             }
-            honeycomb-menu-item:nth-of-type(2), honeycomb-menu-item:nth-of-type(4) {
+            pat97-honeycomb-menu-item:nth-of-type(2), pat97-honeycomb-menu-item:nth-of-type(4) {
                 left: calc( var(--item-size) * 1.5);
             }
-            honeycomb-menu-item:nth-of-type(3), honeycomb-menu-item:nth-of-type(6) {
+            pat97-honeycomb-menu-item:nth-of-type(3), pat97-honeycomb-menu-item:nth-of-type(6) {
                 top: calc( var(--item-size) * 0.865);
             }
-            honeycomb-menu-item:nth-of-type(4), honeycomb-menu-item:nth-of-type(5) {
+            pat97-honeycomb-menu-item:nth-of-type(4), pat97-honeycomb-menu-item:nth-of-type(5) {
                 top: calc( var(--item-size) * 1.725);
             }
-            honeycomb-menu-item:nth-of-type(3) {
+            pat97-honeycomb-menu-item:nth-of-type(3) {
                 left: calc( var(--item-size) * 2);
             }
-            xy-pad {
+            pat97-xy-pad {
                 width: var(--container-width);
                 height: var(--container-height);
             }`;
@@ -277,9 +286,10 @@ class HoneycombMenu extends LitElement
             <div id="shade" class="shade" @click=${this._handleShadeClick}></div>
 
             ${(this.config.xy_pad) ? html`
-                <xy-pad
+                <pat97-xy-pad
                     style="animation-delay: ${this._computeAnimateDelay(1)};"
                     .hass=${this.hass}
+                    .menuStyle=${this.config.style}
                     .config=${this.config.xy_pad}
                     .size=${this._computeXYPadSize()}
                     .clampX=${this._computeXYPadClamp()}
@@ -287,16 +297,17 @@ class HoneycombMenu extends LitElement
                     @drag=${this._handleXYPad}
                     @drag-interval=${this._handleXYPad}
                     @drag-end=${this._handleXYPad}>
-                </xy-pad>`:''}
+                </pat97-xy-pad>`:''}
 
             <div id="honeycombs" class="honeycombs">
                 ${this.buttons.map((v, i) => html`
-                <honeycomb-menu-item
+                <pat97-honeycomb-menu-item
                     style="animation-delay: ${this._computeAnimateDelay(i)};"
                     .hass=${this.hass}
+                    .menuStyle=${this.config.style}
                     .config=${this._computeItemConfig(v)}
                     @action=${this._handleItemAction}>
-                </honeycomb-menu-item>`)}
+                </pat97-honeycomb-menu-item>`)}
             </div>`;
     }
 
@@ -313,9 +324,13 @@ class HoneycombMenu extends LitElement
             variables: {},
             size: 225,
             spacing: 2,
-            animation_speed: 100
+            animation_speed: 100,
+            style: 'mushroom'
         });
+        if( ! ['mushroom', 'classic'].includes(config.style) )
+            config.style = 'mushroom';
         this.config = config;
+        this.setAttribute('menu-style', this.config.style);
         // These aren't perfect calculations but produces the result we want
         // honey combs are not 1:1 ratio's
         let itemSize = this.config.size / 3.586;
@@ -360,7 +375,7 @@ class HoneycombMenu extends LitElement
 
         this.closing = true;
 
-        let ele = _item || this.shadowRoot.querySelectorAll('honeycomb-menu-item')[5];
+        let ele = _item || this.shadowRoot.querySelectorAll('pat97-honeycomb-menu-item')[5];
         if( _item )
         {
             _item.setAttribute('selected', '');
@@ -449,10 +464,19 @@ class HoneycombMenu extends LitElement
 
         this.style.setProperty('--spacing', `${this.config.spacing}px`);
 
-        this._setCssVarProperty('--paper-item-icon-color', '--honeycomb-menu-icon-color');
-        this._setCssVarProperty('--paper-item-icon-active-color', '--honeycomb-menu-icon-active-color');
-        this._setCssVarProperty('--ha-card-background', '--honeycomb-menu-background-color');
-        this._setCssVarProperty('--ha-card-active-background', '--honeycomb-menu-active-background-color');
+        this._setCssVarProperty('--paper-item-icon-color', '--pat97-honeycomb-menu-icon-color');
+        this._setCssVarProperty('--paper-item-icon-active-color', '--pat97-honeycomb-menu-icon-active-color');
+        this._setCssVarProperty('--ha-card-background', '--pat97-honeycomb-menu-background-color');
+        this._setCssVarProperty('--ha-card-active-background', '--pat97-honeycomb-menu-active-background-color');
+
+        if( this.config.style == 'mushroom' )
+        {
+            const honeycombs = this.shadowRoot.querySelector('#honeycombs');
+            honeycombs.style.setProperty('--paper-item-icon-color', 'var(--pat97-honeycomb-menu-icon-color, var(--secondary-text-color))', 'important');
+            honeycombs.style.setProperty('--paper-item-icon-active-color', 'var(--pat97-honeycomb-menu-icon-active-color, var(--primary-color))', 'important');
+            honeycombs.style.setProperty('--ha-card-background', 'var(--pat97-honeycomb-menu-control-background, var(--card-background-color, rgba(127, 127, 127, 0.12)))', 'important');
+            honeycombs.style.setProperty('--ha-card-active-background', 'var(--pat97-honeycomb-menu-active-background, rgba(var(--rgb-primary-color, 3, 169, 244), 0.22))', 'important');
+        }
     }
 
     _handleShadeClick(e)
@@ -548,4 +572,4 @@ class HoneycombMenu extends LitElement
         return this.config.animation_speed * i + 'ms';
     }
 }
-customElements.define(HoneycombMenu.is, HoneycombMenu);
+customElements.define(Pat97HoneycombMenu.is, Pat97HoneycombMenu);

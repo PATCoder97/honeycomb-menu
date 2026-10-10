@@ -1,4 +1,6 @@
-# Honeycomb-Menu for Home Assistant by [@Sian-Lee-SA](http://github.com/Sian-Lee-SA)
+# PAT97 Mushroom Honeycomb Menu for Home Assistant
+
+Personal fork of [Honeycomb Menu by @Sian-Lee-SA](https://github.com/Sian-Lee-SA/honeycomb-menu), restyled to match the soft, rounded appearance of Mushroom cards while preserving the original menu behavior and configuration.
 
 
 <a href="https://www.paypal.com/donate/?business=A82MM255CXF9L&no_recurring=0&item_name=Donating+will+help+justify+my+time+coding+and+doing+projects+that+also+benifits+others.+Any+amount+is+greatly+appreciated%21&currency_code=AUD"><img src="https://github.com/andreostrovsky/donate-with-paypal/raw/master/blue.svg" height="38"></a>
@@ -25,7 +27,16 @@ The module uses a hierarchy override for honeycomb options and sub options so yo
 1. [button-card](https://github.com/custom-cards/button-card)
 
 ## How to install
-1. Download the [module](https://github.com/Sian-Lee-SA/honeycomb-menu/releases)
+
+### HACS (recommended)
+
+1. Open HACS, select the three-dot menu, then select **Custom repositories**.
+1. Add `https://github.com/PATCoder97/honeycomb-menu` with category **Dashboard**.
+1. Install **PAT97 Mushroom Honeycomb Menu** and restart Home Assistant.
+
+### Manual
+
+1. Download `pat97-honeycomb-menu.js` from the [latest release](https://github.com/PATCoder97/honeycomb-menu/releases/latest).
 1. Place the file into the `config/www` path of your home assistant installation
     > you can place into a sub directory if you have OCD like me :grinning: just remember to point the resource url with the sub path
 
@@ -33,7 +44,7 @@ The module uses a hierarchy override for honeycomb options and sub options so yo
     1. `yaml` - find your lovelace.yaml then place the following into resources eg.
         ```yaml
             resources:
-              - url: /local/{path-to-module}.js
+              - url: /local/pat97-honeycomb-menu.js
                 type: module
         ```
     1. `Web Interface` - (Home Assistant V0.108+):
@@ -44,7 +55,7 @@ The module uses a hierarchy override for honeycomb options and sub options so yo
         1. Ensure Resource type is left as Javascript Module
 
 ## How to use
-fire-dom-event action, you can call the honeycomb menu while passing the config options to the property honeycomb_menu.
+fire-dom-event action, you can call the honeycomb menu while passing the config options to the property pat97_honeycomb_menu.
 
 ```yaml
 - type: vertical-stack
@@ -53,7 +64,7 @@ fire-dom-event action, you can call the honeycomb menu while passing the config 
     entity: light.kitchen
     hold_action:
       action: fire-dom-event
-      honeycomb_menu:
+      pat97_honeycomb_menu:
         template: light
         autoclose: false
         active: true
@@ -74,6 +85,7 @@ size | `int:px` | `225` | The size in px of the honeycomb menu. Each button item
 spacing | `int:px` | `2` | This will assign the padding in px for each honeycomb item
 variables | `object` | `null` | Variables can be accessed through parent templates and templating code via `variables.foo` with `foo` being the variable name. See [Example](#example-using-variables)
 animation_speed | `int:ms` | `100` | Change the speed of the animation to show the menu, each ms is addition to each button... so 50ms * 5 = 250ms total time (first button is immediate)
+style | `mushroom \| classic` | `mushroom` | Use the rounded Mushroom appearance or fall back to the original hexagonal style.
 
 ## `Button` Options
 
@@ -87,7 +99,7 @@ audio | `any:url_path` | `honeycomb:audio` | Override the honeycomb audio proper
 entity | `any:entity_id` | `honeycomb:entity` | You can define the entity that this button targets. Omitted will resort to the honeycombs entity. An entity ca be used in templates by accessing its variable `entity`
 position | `int` | `null` | The position index to place the button. This is helpful for overriding template buttons.
 icon | `any:icon` | `null` | Only adding here for reference to custom:button-card so you can show an icon for the item
-color | `any:css_color` | var(--honeycomb-menu-icon-color) | Color of icon or background (depending on custom:button-card config). Leaving the default value allows the theme to handle the color
+color | `any:css_color` | var(--pat97-honeycomb-menu-icon-color) | Color of icon or background (depending on custom:button-card config). Leaving the default value allows the theme to handle the color
 show_name | `true \| false` | `false` | Only relevant for cards that support this option
 Any other options for `Button:type` | - | - | -
 
@@ -119,11 +131,14 @@ Adding the following style properties to your theme `.yaml` file will override t
 ```css
 /* Styles selector is used as a placeholder for syntax highlighting */
 styles {
-    --honeycomb-menu-icon-color: var(--paper-item-icon-color);
-    --honeycomb-menu-icon-active-color: var(--paper-item-icon-active-color);
-    --honeycomb-menu-background-color: var(--paper-card-background-color);
-    --honeycomb-menu-active-background-color: var(--paper-card-active-background-color, var(--paper-card-background-color));
-	--honeycomb-menu-disabled: #9a9a9a6e;
+    --pat97-honeycomb-menu-icon-color: var(--paper-item-icon-color);
+    --pat97-honeycomb-menu-icon-active-color: var(--paper-item-icon-active-color);
+    --pat97-honeycomb-menu-background-color: var(--paper-card-background-color);
+    --pat97-honeycomb-menu-active-background-color: var(--paper-card-active-background-color, var(--paper-card-background-color));
+    --pat97-honeycomb-menu-disabled: #9a9a9a6e;
+    --pat97-honeycomb-menu-control-background: rgba(var(--rgb-primary-text-color), 0.08);
+    --pat97-honeycomb-menu-control-border: rgba(var(--rgb-primary-text-color), 0.08);
+    --pat97-honeycomb-menu-active-background: rgba(var(--rgb-primary-color), 0.22);
 }
 ```
 
@@ -157,7 +172,7 @@ Keep in mind that some service data requires an int and you maybe sending a floa
 ```yaml
 ...
 action: fire-dom-event
-honeycomb_menu:
+pat97_honeycomb_menu:
   entity: light.kitchen
   xy_pad:
     x:
@@ -181,7 +196,7 @@ As by default honeycomb menu items uses custom:buton-card for buttons, you can d
 ```yaml
 ...
 action: fire-dom-event
-honeycomb_menu:
+pat97_honeycomb_menu:
   entity: fan.master_bedroom
   buttons:
     - icon: 'mdi:information-variant'
@@ -218,39 +233,40 @@ Say you have defined a honeycomb menu template for lights, you can then allow th
 
 edit the honeycomb menu templates file (*don't confuse templating with honeycomb templates)
 ```yaml
-light:
-  variables:
-    timer: null
-    motion: null
-  audio: /local/audio/pin-drop.ogg
-  xy_pad:
-    repeat: 500
-    y:
-      invert: true
-      service: light.turn_on
-      data:
-        entity_id: entity
-        brightness_step_pct: 'HCJS: return variables.y_percentage / 10;' # or '${variables.y_percentage / 10}'
-  buttons:
-    - icon: 'mdi:information-variant'
-      tap_action:
-        action: more-info
-    - icon: 'mdi:lightbulb'
-      active: true
-    - show: 'HCJS: return (variables.motion);' # or '${variables.motion}'
-      entity: 'HCJS: return variables.motion;' # or '${variables.motion}'
-      icon: 'mdi:motion-sensor'
-      position: 4
-      active: true
-      tap_action:
-        action: toggle
-    - show: 'HCJS: return (variables.timer);' # or '${variables.timer}'
-      entity: 'HCJS: return variables.timer;' # or '${variables.timer}'
-      icon: 'mdi:timer'
-      position: 5
-      active: true
-      tap_action:
-        action: toggle
+pat97_honeycomb_menu_templates:
+  light:
+    variables:
+      timer: null
+      motion: null
+    audio: /local/audio/pin-drop.ogg
+    xy_pad:
+      repeat: 500
+      y:
+        invert: true
+        service: light.turn_on
+        data:
+          entity_id: entity
+          brightness_step_pct: 'HCJS: return variables.y_percentage / 10;' # or '${variables.y_percentage / 10}'
+    buttons:
+      - icon: 'mdi:information-variant'
+        tap_action:
+          action: more-info
+      - icon: 'mdi:lightbulb'
+        active: true
+      - show: 'HCJS: return (variables.motion);' # or '${variables.motion}'
+        entity: 'HCJS: return variables.motion;' # or '${variables.motion}'
+        icon: 'mdi:motion-sensor'
+        position: 4
+        active: true
+        tap_action:
+          action: toggle
+      - show: 'HCJS: return (variables.timer);' # or '${variables.timer}'
+        entity: 'HCJS: return variables.timer;' # or '${variables.timer}'
+        icon: 'mdi:timer'
+        position: 5
+        active: true
+        tap_action:
+          action: toggle
 ```
 
 With the example above, if a menu derives the light template then any menu that sets a timer or motion as a variable will show those menu items with the entity being set to the variable property. If the variable is not set then it won't show the menu item and instead will either show the next derived item for that item position or nothing.
@@ -261,7 +277,7 @@ Below is an example on how to assign a menu to the above example.
   entity: light.back_yard_garden_leds
   hold_action:
     action: fire-dom-event
-    honeycomb_menu:
+    pat97_honeycomb_menu:
       template: light
       variables:
         motion: automation.motion_back_yard_garden_leds

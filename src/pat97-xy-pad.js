@@ -2,11 +2,11 @@ import { LitElement, html, css } from 'lit';
 
 const clamp = require('lodash/clamp');
 
-class XYPad extends LitElement
+class Pat97XYPad extends LitElement
 {
     static get is()
     {
-        return 'xy-pad';
+        return 'pat97-xy-pad';
     }
 
     static get properties()
@@ -31,6 +31,11 @@ class XYPad extends LitElement
                 type: Boolean,
                 reflect: true,
                 attribute: true
+            },
+            menuStyle: {
+                type: String,
+                reflect: true,
+                attribute: 'menu-style'
             },
             _current: {
                 type: Object
@@ -61,6 +66,12 @@ class XYPad extends LitElement
                 background: #cecece7d;
                 border-radius: 50%;
             }
+            :host([menu-style="mushroom"]) #joystick {
+                background: var(--pat97-honeycomb-menu-control-background, var(--card-background-color, rgba(127, 127, 127, 0.12)));
+                border: 1px solid var(--pat97-honeycomb-menu-control-border, rgba(127, 127, 127, 0.18));
+                box-shadow: var(--ha-card-box-shadow, 0 2px 6px rgba(0, 0, 0, 0.14));
+                transition: background-color 180ms ease, box-shadow 180ms ease;
+            }
             #joystick:hover {
                 cursor: pointer;
                 background: #b3b3b3a3;
@@ -68,6 +79,11 @@ class XYPad extends LitElement
             #joystick:active, :host([active]) #joystick {
                 box-shadow: 0px 0px 2px 5px #fbfbfb;
                 background: #c5c5c5;
+            }
+            :host([menu-style="mushroom"]) #joystick:active,
+            :host([menu-style="mushroom"][active]) #joystick {
+                box-shadow: 0 0 0 5px rgba(var(--rgb-primary-color, 3, 169, 244), 0.18);
+                background: var(--pat97-honeycomb-menu-active-background, rgba(var(--rgb-primary-color, 3, 169, 244), 0.22));
             }`;
     }
 
@@ -194,4 +210,4 @@ class XYPad extends LitElement
         };
     }
 };
-customElements.define(XYPad.is, XYPad);
+customElements.define(Pat97XYPad.is, Pat97XYPad);

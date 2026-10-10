@@ -10,10 +10,10 @@
 const path = require('path');
 
 module.exports = {
-    entry: './src/honeycomb-menu.js',
+    entry: './src/pat97-honeycomb-menu.js',
     mode: 'production',
     output: {
-        filename: 'honeycomb-menu.js',
+        filename: 'pat97-honeycomb-menu.js',
         path: path.resolve(__dirname)
     }
 };
