@@ -54,12 +54,34 @@
   customElements.define('ha-icon', HAIcon);
   customElements.define('ha-state-icon', class extends HAIcon {});
   customElements.define('hui-error-card', class extends HTMLElement { setConfig(config) { throw new Error(JSON.stringify(config)); } });
+  // Minimal Lovelace shadow tree for the actual ll-custom -> public API path.
+  // This is navigation/HA scaffolding, not a live HA frontend.
+  window.setupLovelaceLauncher = () => {
+    const ha=document.querySelector('home-assistant');
+    ha.addEventListener('hass-action', event => {
+      (window.testHassActions ||= []).push(event.detail);
+    });
+    const root=ha.shadowRoot || ha.attachShadow({mode:'open'});
+    root.innerHTML='<home-assistant-main></home-assistant-main>';
+    const main=root.querySelector('home-assistant-main').attachShadow({mode:'open'});
+    main.innerHTML='<ha-drawer><partial-panel-resolver></partial-panel-resolver></ha-drawer>';
+    const resolver=main.querySelector('partial-panel-resolver').attachShadow({mode:'open'});
+    resolver.innerHTML='<ha-panel-lovelace></ha-panel-lovelace>';
+    const panel=resolver.querySelector('ha-panel-lovelace').attachShadow({mode:'open'});
+    panel.innerHTML='<hui-root></hui-root>';
+    const hui=panel.querySelector('hui-root'); hui.lovelace={config:{}};
+    const layout=hui.attachShadow({mode:'open'});
+    layout.innerHTML='<ha-app-layout><div id="view"><hui-view style="display:block;position:relative;width:1000px;height:800px;padding:0"><button id="launcher" style="position:absolute;left:420px;top:360px">Open menu</button></hui-view></div></ha-app-layout>';
+    layout.querySelector('#launcher').addEventListener('click', event => {
+      event.currentTarget.dispatchEvent(new CustomEvent('ll-custom',{bubbles:true,composed:true,detail:{honeycomb_menu:window.launchConfig}}));
+    });
+  };
   window.renderMenu = async (tag, options) => {
     document.querySelector('#view').replaceChildren();
     const menu = document.createElement(tag);
     const config = {
       entity: 'light.room', style: 'mushroom', size: options.size, spacing: options.spacing,
-      animation_speed: 0, empty_slots: options.emptySlots || 'visible',
+      animation_speed: options.animationSpeed ?? 0, empty_slots: options.emptySlots || 'visible',
       animation_mode: options.animationMode || 'legacy',
       center_button: options.center ? { icon: 'mdi:close' } : false,
       buttons: Array.from({ length: options.count }, () => [{ icon: 'mdi:lightbulb', show_name: false, show_state: false }])

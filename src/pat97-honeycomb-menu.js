@@ -295,7 +295,9 @@ class Pat97HoneycombMenu extends LitElement
             }
             pat97-honeycomb-menu-item, pat97-xy-pad {
                 animation-duration: 0.5s;
-                animation-fill-mode: both;
+                /* Keep delayed items hidden, but release the transform once
+                   opening ends. Forward fill changes resting edge pixels. */
+                animation-fill-mode: backwards;
                 animation-name: zoomIn;
             }
             :host([closing]) pat97-honeycomb-menu-item, :host([closing]) pat97-xy-pad {

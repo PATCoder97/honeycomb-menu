@@ -278,7 +278,8 @@ test('center close uses the selected animation and cards keep a regular hexagon 
     assert.doesNotMatch(menuStyles, /will-change\s*:/);
     assert.doesNotMatch(menuStyles, /backface-visibility\s*:/);
     assert.doesNotMatch(menuStyles, /transition:\s*transform|scale3d\(1\.04|scale3d\(1\.08/);
-    assert.match(menuStyles, /animation-fill-mode:\s*both/);
+    assert.match(menuStyles, /pat97-honeycomb-menu-item, pat97-xy-pad\s*\{[^}]*animation-fill-mode:\s*backwards/);
+    assert.match(menuStyles, /:host\(\[closing\]\) pat97-xy-pad\s*\{[^}]*animation-fill-mode:\s*both/);
     assert.match(menuStyles, /animation-name:\s*zoomIn/);
     assert.match(menuStyles, /animation-name:\s*zoomOut/);
     assert.match(menuStyles, /animation-name:\s*bounceOut/);
