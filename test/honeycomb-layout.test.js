@@ -34,11 +34,13 @@ test('classic layouts preserve all six original slots and dimensions', () => {
     approximatelyEqual(buttonPosition(5, layout.rings).y, HEXAGON_ROW_STEP * 2);
     approximatelyEqual(centerPosition(layout.rings).y, HEXAGON_ROW_STEP);
 
-    const metrics = containerMetrics(225, layout.rings);
+    const metrics = containerMetrics(225, layout.rings, 2);
     assert.equal(metrics.containerWidth, metrics.item * 3);
+    approximatelyEqual(metrics.hexagonWidth, metrics.item - 4);
+    approximatelyEqual(metrics.hexagonHeight, metrics.hexagonWidth * HEXAGON_HEIGHT_RATIO);
     approximatelyEqual(
         metrics.containerHeight,
-        metrics.item * (HEXAGON_HEIGHT_RATIO + HEXAGON_ROW_STEP * 2)
+        (metrics.item * HEXAGON_ROW_STEP * 2) + metrics.hexagonHeight + 4
     );
 });
 
@@ -63,6 +65,61 @@ test('regular hexagon rows use one exact step throughout both rings', () => {
         approximatelyEqual(topRows[index] - topRows[index - 1], HEXAGON_ROW_STEP);
 
     approximatelyEqual(HEXAGON_HEIGHT_RATIO * 0.75, HEXAGON_ROW_STEP);
+});
+
+test('hexagon edges and gaps stay regular across menu sizes and spacing values', () => {
+    const layout = assignButtons(entries(18));
+
+    for( const size of [160, 225, 320] )
+    {
+        for( const spacing of [0, 1, 2, 5] )
+        {
+            const metrics = containerMetrics(size, layout.rings, spacing);
+            const slopedEdge = Math.hypot(
+                metrics.hexagonWidth / 2,
+                metrics.hexagonHeight / 4
+            );
+
+            approximatelyEqual(slopedEdge, metrics.hexagonHeight / 2);
+            approximatelyEqual(metrics.item - metrics.hexagonWidth, spacing * 2);
+
+            const centers = [
+                ...Array.from({ length: 18 }, (_, slot) => buttonPosition(slot, layout.rings)),
+                centerPosition(layout.rings)
+            ].map(position => ({
+                x: position.x * metrics.item + metrics.spacing + metrics.hexagonWidth / 2,
+                y: position.y * metrics.item + metrics.spacing + metrics.hexagonHeight / 2
+            }));
+
+            for( let first = 0; first < centers.length; first++ )
+            {
+                for( let second = first + 1; second < centers.length; second++ )
+                {
+                    const distance = Math.hypot(
+                        centers[first].x - centers[second].x,
+                        centers[first].y - centers[second].y
+                    );
+
+                    if( distance < metrics.item * 1.01 )
+                    {
+                        approximatelyEqual(distance, metrics.item, 1e-10);
+                        approximatelyEqual(distance - metrics.hexagonWidth, spacing * 2, 1e-10);
+                    }
+                }
+            }
+        }
+    }
+});
+
+test('spacing is clamped before it can invert a hexagon', () => {
+    const rings = { inner: true, outer: false };
+    const negative = containerMetrics(225, rings, -5);
+    const excessive = containerMetrics(225, rings, 999);
+
+    assert.equal(negative.spacing, 0);
+    approximatelyEqual(negative.hexagonWidth, negative.item);
+    approximatelyEqual(excessive.spacing, excessive.item / 2);
+    assert.equal(excessive.hexagonWidth, 0);
 });
 
 test('eighteen buttons fill both rings and extra buttons are rejected', () => {

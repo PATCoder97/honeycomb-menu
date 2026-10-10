@@ -391,7 +391,7 @@ class Pat97HoneycombMenu extends LitElement
         this.setAttribute('menu-style', this.config.style);
 
         this._assignButtons();
-        this.sizes = containerMetrics(this.config.size, this._rings);
+        this.sizes = containerMetrics(this.config.size, this._rings, this.config.spacing);
 
         if( this.config.xy_pad )
         {
@@ -583,7 +583,8 @@ class Pat97HoneycombMenu extends LitElement
         this.style.setProperty('--container-width', `${this.sizes.containerWidth}px`);
         this.style.setProperty('--container-height', `${this.sizes.containerHeight}px`);
 
-        this.style.setProperty('--spacing', `${this.config.spacing}px`);
+        this.style.setProperty('--spacing', `${this.sizes.spacing}px`);
+        this.style.setProperty('--hexagon-height', `${this.sizes.hexagonHeight}px`);
         const centerBrightness = Number(this.config.center_brightness);
         const centerBrightnessFactor = Number.isFinite(centerBrightness)
             ? Math.max(0, 1 + (centerBrightness / 100))

@@ -118,24 +118,17 @@ class Pat97HoneycombMenuItem extends LitElement
             }
             .honeycomb {
                 width: 100%;
+                height: var(--hexagon-height);
                 overflow: hidden;
                 clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
             }
             .honey {
                 list-style-type: none;
                 position: relative;
-                display: inline-block;
-
+                display: block;
                 width: 100%;
-                padding: 0 0 var(--temp, 115.47005384%) 0;
-                -o-transform: rotate(-60deg) skewY(30deg);
-                -moz-transform: rotate(-60deg) skewY(30deg);
-                -webkit-transform: rotate(-60deg) skewY(30deg);
-                -ms-transform: rotate(-60deg) skewY(30deg);
-                transform: rotate(-60deg) skewY(30deg);
+                height: 100%;
                 overflow: hidden;
-                visibility: hidden;
-
                 z-index:100;
             }
             .comb {
@@ -144,17 +137,9 @@ class Pat97HoneycombMenuItem extends LitElement
                 left: 0;
                 width: 100%;
                 height: 100%;
-                -o-transform: skewY(-30deg) rotate(60deg);
-                -moz-transform: skewY(-30deg) rotate(60deg);
-                -webkit-transform: skewY(-30deg) rotate(60deg);
-                -ms-transform: skewY(-30deg) rotate(60deg);
-                transform: skewY(-30deg) rotate(60deg);
                 overflow: hidden;
 
                 background: #000;
-            }
-            .comb * {
-                visibility: visible;
             }
             :host([menu-style="mushroom"]) .comb {
                 background: var(--ha-card-background, var(--pat97-honeycomb-menu-control-background));

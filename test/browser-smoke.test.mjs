@@ -220,6 +220,11 @@ test('extended render supports seven visible slots, center button, defaults and 
     assert.equal(ringItems[6].dataset.honeycombSlot, '6');
     assert.equal(ringItems[0].config.color, 'var(--primary-color)');
     assert.ok(menu.sizes.containerWidth > 300);
+    assert.equal(
+        menu.style.getPropertyValue('--hexagon-height'),
+        `${menu.sizes.hexagonHeight}px`
+    );
+    assert.equal(menu.style.getPropertyValue('--spacing'), `${menu.sizes.spacing}px`);
 
     const wrappedCard = ringItems[0].shadowRoot.querySelector('#item > *');
     const actionTarget = wrappedCard.shadowRoot.querySelector('ha-card');
@@ -252,6 +257,14 @@ test('center close uses the selected animation and cards keep an outer hexagon m
     assert.match(
         browser.customElements.get('pat97-honeycomb-menu-item').styles.cssText,
         /clip-path:\s*polygon\(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%\)/
+    );
+    assert.match(
+        browser.customElements.get('pat97-honeycomb-menu-item').styles.cssText,
+        /height:\s*var\(--hexagon-height\)/
+    );
+    assert.doesNotMatch(
+        browser.customElements.get('pat97-honeycomb-menu-item').styles.cssText,
+        /skewY\(|rotate\(-?60deg\)/
     );
 
     center.dispatchEvent(new browser.Event('animationend'));

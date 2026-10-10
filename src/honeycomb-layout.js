@@ -177,16 +177,25 @@ function centerPosition(rings)
         : { x: 1, y: HEXAGON_ROW_STEP };
 }
 
-function containerMetrics(size, rings)
+function containerMetrics(size, rings, spacing = 0)
 {
     const item = size / 3.586;
+    const requestedSpacing = Number(spacing);
+    const safeSpacing = Number.isFinite(requestedSpacing)
+        ? Math.min(Math.max(0, requestedSpacing), item / 2)
+        : 0;
+    const hexagonWidth = item - (safeSpacing * 2);
+    const hexagonHeight = hexagonWidth * HEXAGON_HEIGHT_RATIO;
+    const rowCount = rings.outer ? 4 : 2;
 
     return {
         item,
+        spacing: safeSpacing,
+        hexagonWidth,
+        hexagonHeight,
         containerWidth: item * (rings.outer ? 5 : 3),
-        containerHeight: item * (
-            HEXAGON_HEIGHT_RATIO + HEXAGON_ROW_STEP * (rings.outer ? 4 : 2)
-        )
+        containerHeight: (item * HEXAGON_ROW_STEP * rowCount) +
+            hexagonHeight + (safeSpacing * 2)
     };
 }
 
