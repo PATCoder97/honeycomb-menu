@@ -1,28 +1,30 @@
 const INNER_SLOTS = [0, 1, 2, 3, 4, 5];
 const OUTER_SLOTS = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
+const HEXAGON_HEIGHT_RATIO = 2 / Math.sqrt(3);
+const HEXAGON_ROW_STEP = Math.sqrt(3) / 2;
 
 const INNER_POSITIONS = [
-    { x: 0, y: 0.865 },
+    { x: 0, y: HEXAGON_ROW_STEP },
     { x: 0.5, y: 0 },
     { x: 1.5, y: 0 },
-    { x: 2, y: 0.865 },
-    { x: 1.5, y: 1.725 },
-    { x: 0.5, y: 1.725 }
+    { x: 2, y: HEXAGON_ROW_STEP },
+    { x: 1.5, y: HEXAGON_ROW_STEP * 2 },
+    { x: 0.5, y: HEXAGON_ROW_STEP * 2 }
 ];
 
 const OUTER_POSITIONS = [
-    { x: -1, y: 0.865 },
+    { x: -1, y: HEXAGON_ROW_STEP },
     { x: -0.5, y: 0 },
-    { x: 0, y: -0.865 },
-    { x: 1, y: -0.865 },
-    { x: 2, y: -0.865 },
+    { x: 0, y: -HEXAGON_ROW_STEP },
+    { x: 1, y: -HEXAGON_ROW_STEP },
+    { x: 2, y: -HEXAGON_ROW_STEP },
     { x: 2.5, y: 0 },
-    { x: 3, y: 0.865 },
-    { x: 2.5, y: 1.725 },
-    { x: 2, y: 2.59 },
-    { x: 1, y: 2.59 },
-    { x: 0, y: 2.59 },
-    { x: -0.5, y: 1.725 }
+    { x: 3, y: HEXAGON_ROW_STEP },
+    { x: 2.5, y: HEXAGON_ROW_STEP * 2 },
+    { x: 2, y: HEXAGON_ROW_STEP * 3 },
+    { x: 1, y: HEXAGON_ROW_STEP * 3 },
+    { x: 0, y: HEXAGON_ROW_STEP * 3 },
+    { x: -0.5, y: HEXAGON_ROW_STEP * 2 }
 ];
 
 function validInteger(value, min, max)
@@ -164,15 +166,15 @@ function buttonPosition(slot, rings)
         return null;
 
     return rings.outer
-        ? { x: position.x + 1, y: position.y + 0.865 }
+        ? { x: position.x + 1, y: position.y + HEXAGON_ROW_STEP }
         : { ...position };
 }
 
 function centerPosition(rings)
 {
     return rings.outer
-        ? { x: 2, y: 1.73 }
-        : { x: 1, y: 0.865 };
+        ? { x: 2, y: HEXAGON_ROW_STEP * 2 }
+        : { x: 1, y: HEXAGON_ROW_STEP };
 }
 
 function containerMetrics(size, rings)
@@ -182,7 +184,9 @@ function containerMetrics(size, rings)
     return {
         item,
         containerWidth: item * (rings.outer ? 5 : 3),
-        containerHeight: item * (rings.outer ? 4.63 : 2.9)
+        containerHeight: item * (
+            HEXAGON_HEIGHT_RATIO + HEXAGON_ROW_STEP * (rings.outer ? 4 : 2)
+        )
     };
 }
 
@@ -207,6 +211,8 @@ function isPastDragDeadzone(startX, startY, currentX, currentY, deadzone)
 }
 
 module.exports = {
+    HEXAGON_HEIGHT_RATIO,
+    HEXAGON_ROW_STEP,
     INNER_SLOTS,
     OUTER_SLOTS,
     assignButtons,

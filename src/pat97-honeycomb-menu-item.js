@@ -127,7 +127,7 @@ class Pat97HoneycombMenuItem extends LitElement
                 display: inline-block;
 
                 width: 100%;
-                padding: 0 0 var(--temp, 114.76%) 0;
+                padding: 0 0 var(--temp, 115.47005384%) 0;
                 -o-transform: rotate(-60deg) skewY(30deg);
                 -moz-transform: rotate(-60deg) skewY(30deg);
                 -webkit-transform: rotate(-60deg) skewY(30deg);

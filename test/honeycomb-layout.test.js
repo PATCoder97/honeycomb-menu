@@ -2,6 +2,8 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const {
+    HEXAGON_HEIGHT_RATIO,
+    HEXAGON_ROW_STEP,
     assignButtons,
     animationStep,
     buttonPosition,
@@ -9,6 +11,11 @@ const {
     containerMetrics,
     isPastDragDeadzone
 } = require('../src/honeycomb-layout.js');
+
+function approximatelyEqual(actual, expected, epsilon = 1e-12)
+{
+    assert.ok(Math.abs(actual - expected) <= epsilon, `${actual} != ${expected}`);
+}
 
 function entries(count)
 {
@@ -23,13 +30,16 @@ test('classic layouts preserve all six original slots and dimensions', () => {
 
     assert.deepEqual(layout.rings, { inner: true, outer: false });
     assert.deepEqual(layout.buttons.map(button => button.id), [1, 2, 3, 4, 5, 6]);
-    assert.deepEqual(buttonPosition(0, layout.rings), { x: 0, y: 0.865 });
-    assert.deepEqual(buttonPosition(5, layout.rings), { x: 0.5, y: 1.725 });
-    assert.deepEqual(centerPosition(layout.rings), { x: 1, y: 0.865 });
+    approximatelyEqual(buttonPosition(0, layout.rings).y, HEXAGON_ROW_STEP);
+    approximatelyEqual(buttonPosition(5, layout.rings).y, HEXAGON_ROW_STEP * 2);
+    approximatelyEqual(centerPosition(layout.rings).y, HEXAGON_ROW_STEP);
 
     const metrics = containerMetrics(225, layout.rings);
     assert.equal(metrics.containerWidth, metrics.item * 3);
-    assert.equal(metrics.containerHeight, metrics.item * 2.9);
+    approximatelyEqual(
+        metrics.containerHeight,
+        metrics.item * (HEXAGON_HEIGHT_RATIO + HEXAGON_ROW_STEP * 2)
+    );
 });
 
 test('the outer ring activates only after the sixth automatic button', () => {
@@ -41,8 +51,18 @@ test('the outer ring activates only after the sixth automatic button', () => {
     assert.equal(seven.buttons.length, 18);
     assert.deepEqual(seven.buttons.slice(0, 7).map(button => button.id), [1, 2, 3, 4, 5, 6, 7]);
     assert.ok(seven.buttons.slice(7).every(button => Object.keys(button).length === 0));
-    assert.deepEqual(buttonPosition(6, seven.rings), { x: 0, y: 1.73 });
-    assert.deepEqual(centerPosition(seven.rings), { x: 2, y: 1.73 });
+    approximatelyEqual(buttonPosition(6, seven.rings).y, HEXAGON_ROW_STEP * 2);
+    approximatelyEqual(centerPosition(seven.rings).y, HEXAGON_ROW_STEP * 2);
+});
+
+test('regular hexagon rows use one exact step throughout both rings', () => {
+    const layout = assignButtons(entries(18));
+    const topRows = [8, 7, 6, 13, 16].map(slot => buttonPosition(slot, layout.rings).y);
+
+    for( let index = 1; index < topRows.length; index++ )
+        approximatelyEqual(topRows[index] - topRows[index - 1], HEXAGON_ROW_STEP);
+
+    approximatelyEqual(HEXAGON_HEIGHT_RATIO * 0.75, HEXAGON_ROW_STEP);
 });
 
 test('eighteen buttons fill both rings and extra buttons are rejected', () => {
