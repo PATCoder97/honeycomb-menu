@@ -1,6 +1,6 @@
 # PAT97 Honeycomb Menu for Home Assistant
 
-Personal fork of [Honeycomb Menu by @Sian-Lee-SA](https://github.com/Sian-Lee-SA/honeycomb-menu), restyled to match the soft, rounded appearance of Mushroom cards while preserving the original menu behavior and configuration.
+Personal fork of [Honeycomb Menu by @Sian-Lee-SA](https://github.com/Sian-Lee-SA/honeycomb-menu), using Mushroom colors while preserving the original honeycomb shape, layout, animation, behavior, and configuration.
 
 
 <a href="https://www.paypal.com/donate/?business=A82MM255CXF9L&no_recurring=0&item_name=Donating+will+help+justify+my+time+coding+and+doing+projects+that+also+benifits+others.+Any+amount+is+greatly+appreciated%21&currency_code=AUD"><img src="https://github.com/andreostrovsky/donate-with-paypal/raw/master/blue.svg" height="38"></a>
@@ -85,7 +85,7 @@ size | `int:px` | `225` | The size in px of the honeycomb menu. Each button item
 spacing | `int:px` | `2` | This will assign the padding in px for each honeycomb item
 variables | `object` | `null` | Variables can be accessed through parent templates and templating code via `variables.foo` with `foo` being the variable name. See [Example](#example-using-variables)
 animation_speed | `int:ms` | `100` | Change the speed of the animation to show the menu, each ms is addition to each button... so 50ms * 5 = 250ms total time (first button is immediate)
-style | `mushroom \| classic` | `mushroom` | Use the rounded Mushroom appearance or fall back to the original hexagonal style.
+style | `mushroom \| classic` | `mushroom` | Keep the original hexagonal style with Mushroom colors, or use the original classic colors.
 
 ## `Button` Options
 

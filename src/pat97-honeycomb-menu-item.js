@@ -151,31 +151,11 @@ class Pat97HoneycombMenuItem extends LitElement
             .comb * {
                 visibility: visible;
             }
-            :host([menu-style="mushroom"]) .honey {
-                padding-bottom: 100%;
-                transform: none;
-                border-radius: 50%;
-                filter: none;
-            }
             :host([menu-style="mushroom"]) .comb {
-                transform: none;
-                border-radius: 50%;
                 background: var(--ha-card-background, var(--pat97-honeycomb-menu-control-background));
-                border: 1px solid var(--pat97-honeycomb-menu-control-border, rgba(var(--rgb-primary-text-color, 33, 33, 33), 0.08));
-                box-sizing: border-box;
-                box-shadow: var(--ha-card-box-shadow, 0 2px 6px rgba(0, 0, 0, 0.14));
-                transition: transform 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
-            }
-            :host([menu-style="mushroom"]) .comb:hover {
-                transform: scale(1.04);
-                box-shadow: var(--ha-card-box-shadow, 0 4px 10px rgba(0, 0, 0, 0.18));
-            }
-            :host([menu-style="mushroom"]) .comb:active {
-                transform: scale(0.94);
             }
             :host([menu-style="mushroom"][active]) .comb {
                 background: var(--ha-card-active-background, var(--pat97-honeycomb-menu-active-background));
-                border-color: rgba(var(--rgb-primary-color, 3, 169, 244), 0.28);
             }
             :host([menu-style="mushroom"][active]) {
                 --paper-item-icon-color: var(--paper-item-icon-active-color);
@@ -194,8 +174,6 @@ class Pat97HoneycombMenuItem extends LitElement
             }
             :host([menu-style="mushroom"][disabled]) .comb {
                 background: rgba(var(--rgb-primary-text-color, 33, 33, 33), 0.04);
-                border-color: transparent;
-                box-shadow: none;
             }
             :host([menu-style="mushroom"][disabled]) #item {
                 background: transparent;
@@ -263,19 +241,11 @@ class Pat97HoneycombMenuItem extends LitElement
             if( ! Array.isArray(this.config.styles.card) )                
                 this.config.styles.card = [];
             
-            const cardStyle = {
+            this.config.styles.card.push({
                 height: '100%',
                 position: 'fixed',
                 padding: '0'
-            };
-            if( this.menuStyle == 'mushroom' )
-            {
-                cardStyle['border-radius'] = '50%';
-                cardStyle.background = 'var(--ha-card-background)';
-                cardStyle['box-shadow'] = 'none';
-                cardStyle.border = 'none';
-            }
-            this.config.styles.card.push(cardStyle);
+            });
         }
 
         var card = createCard(merge({}, {    

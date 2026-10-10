@@ -68,9 +68,6 @@ class Pat97XYPad extends LitElement
             }
             :host([menu-style="mushroom"]) #joystick {
                 background: var(--pat97-honeycomb-menu-control-background, var(--card-background-color, rgba(127, 127, 127, 0.12)));
-                border: 1px solid var(--pat97-honeycomb-menu-control-border, rgba(127, 127, 127, 0.18));
-                box-shadow: var(--ha-card-box-shadow, 0 2px 6px rgba(0, 0, 0, 0.14));
-                transition: background-color 180ms ease, box-shadow 180ms ease;
             }
             #joystick:hover {
                 cursor: pointer;
@@ -82,7 +79,7 @@ class Pat97XYPad extends LitElement
             }
             :host([menu-style="mushroom"]) #joystick:active,
             :host([menu-style="mushroom"][active]) #joystick {
-                box-shadow: 0 0 0 5px rgba(var(--rgb-primary-color, 3, 169, 244), 0.18);
+                box-shadow: 0 0 2px 5px rgba(var(--rgb-primary-color, 3, 169, 244), 0.22);
                 background: var(--pat97-honeycomb-menu-active-background, rgba(var(--rgb-primary-color, 3, 169, 244), 0.22));
             }`;
     }

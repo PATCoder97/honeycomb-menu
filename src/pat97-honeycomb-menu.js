@@ -220,11 +220,6 @@ class Pat97HoneycombMenu extends LitElement
                 animation-fill-mode: both;
                 animation-name: fadeIn;
             }
-            :host([menu-style="mushroom"]) .shade {
-                background: rgba(0, 0, 0, 0.24);
-                -webkit-backdrop-filter: blur(2px);
-                backdrop-filter: blur(2px);
-            }
             :host([closing]) .shade {
                 animation-name: fadeOut;
                 animation-duration: 500ms;
@@ -235,10 +230,6 @@ class Pat97HoneycombMenu extends LitElement
                 width: var(--container-width);
                 height: var(--container-height);
                 pointer-events: none;
-            }
-            :host([menu-style="mushroom"]) .honeycombs {
-                --filter-color: rgba(0, 0, 0, 0.18);
-                filter: drop-shadow(0 6px 12px var(--filter-color));
             }
             pat97-honeycomb-menu-item {
                 position: absolute;
