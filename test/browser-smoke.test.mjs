@@ -275,7 +275,9 @@ test('center close uses the selected animation and cards keep a regular hexagon 
     assert.match(menuStyles, /@media\s*\(hover:\s*hover\)\s*and\s*\(pointer:\s*fine\)/);
     assert.match(menuStyles, /:not\(\.drag-hover\):not\(\[disabled\]\):hover/);
     assert.match(menuStyles, /filter:\s*brightness\(1\.08\)/);
-    assert.match(menuStyles, /transition:\s*transform 160ms ease,\s*filter 160ms ease/);
+    assert.match(menuStyles, /will-change:\s*transform,\s*filter/);
+    assert.match(menuStyles, /backface-visibility:\s*hidden/);
+    assert.match(menuStyles, /transition:\s*transform 220ms cubic-bezier\(0\.2, 0, 0\.2, 1\),\s*filter 220ms cubic-bezier\(0\.2, 0, 0\.2, 1\)/);
     assert.match(menuStyles, /scale3d\(1\.04,\s*1\.04,\s*1\.04\)/);
 
     center.dispatchEvent(new browser.Event('animationend'));

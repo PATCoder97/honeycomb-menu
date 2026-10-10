@@ -100,6 +100,51 @@ try {
     await page.mouse.move(900,700);
     await page.waitForFunction(() => getComputedStyle(testMenu.shadowRoot.querySelector('.center-item')).transform === 'none');
     checkGeometry(await page.evaluate(() => measureGeometry()), 42);
+    // Sample live frames, including reversing before the zoom has completed
+    // and crossing into a neighboring cell. Endpoint-only tests miss snapping.
+    await page.evaluate(() => {
+      window.motionFrames = [];
+      window.captureMotion = true;
+      const cells = [...testMenu.shadowRoot.querySelectorAll('pat97-honeycomb-menu-item')];
+      const sample = time => {
+        motionFrames.push({ time, cells: cells.map(item => {
+          const shape = item.shadowRoot.querySelector('.honey').getBoundingClientRect();
+          const icon = item.shadowRoot.querySelector('button-card')?.shadowRoot.querySelector('ha-state-icon, ha-icon')?.getBoundingClientRect();
+          return {
+            scale: new DOMMatrixReadOnly(getComputedStyle(item).transform).a,
+            offset: icon ? Math.hypot(icon.x+icon.width/2-shape.x-shape.width/2, icon.y+icon.height/2-shape.y-shape.height/2) : 0
+          };
+        }) });
+        if(captureMotion) requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    });
+    const centerBox = await center.boundingBox();
+    await page.mouse.move(centerBox.x+centerBox.width/2, centerBox.y+centerBox.height/2);
+    await page.waitForTimeout(280);
+    await page.mouse.move(900,700);
+    await page.waitForTimeout(70);
+    await page.mouse.move(centerBox.x+centerBox.width/2, centerBox.y+centerBox.height/2);
+    await page.waitForTimeout(70);
+    const neighbor = await page.locator('pat97-honeycomb-menu-item[data-honeycomb-slot="0"]').boundingBox();
+    await page.mouse.move(neighbor.x+neighbor.width/2, neighbor.y+neighbor.height/2);
+    await page.waitForTimeout(280);
+    await page.mouse.move(900,700);
+    await page.waitForTimeout(280);
+    const motion = await page.evaluate(() => { captureMotion = false; return motionFrames; });
+    assert.ok(motion.length > 10, 'Capture intermediate hover frames');
+    const intermediateScales = new Set();
+    for(const [index, frame] of motion.entries()) {
+      for(const [cellIndex, cell] of frame.cells.entries()) {
+        assert.ok(cell.offset < tolerance, `Icon moved off center: ${cell.offset}`);
+        assert.ok(cell.scale >= 0.99999 && cell.scale <= 1.04001, 'Hover must not overshoot');
+        if(cell.scale > 1.001 && cell.scale < 1.039) intermediateScales.add(cell.scale.toFixed(4));
+        if(index && frame.time-motion[index-1].time <= 20)
+          assert.ok(Math.abs(cell.scale-motion[index-1].cells[cellIndex].scale) < 0.012, 'Hover snapped between consecutive frames');
+      }
+    }
+    assert.ok(intermediateScales.size >= 3, 'Zoom must interpolate, not jump between endpoints');
+    checkGeometry(await page.evaluate(() => measureGeometry()), 42);
     // Negative controls: the verifier must reject the two previous regressions.
     await page.evaluate(() => {
       for( const item of testMenu.shadowRoot.querySelectorAll('pat97-honeycomb-menu-item') ) {
