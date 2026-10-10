@@ -31,12 +31,16 @@ The module uses a hierarchy override for honeycomb options and sub options so yo
 ### HACS (recommended)
 
 1. Open HACS, select the three-dot menu, then select **Custom repositories**.
-1. Add `https://github.com/PATCoder97/honeycomb-menu` with category **Dashboard**.
+1. Add `https://github.com/PATCoder97/pat97-honeycomb-menu` with category **Dashboard**.
 1. Install **PAT97 Honeycomb Menu** and restart Home Assistant.
+
+HACS installs the file at `/config/www/community/pat97-honeycomb-menu/pat97-honeycomb-menu.js`. The dashboard resource URL is `/hacsfiles/pat97-honeycomb-menu/pat97-honeycomb-menu.js` (JavaScript module).
+
+If you previously installed this fork as `PATCoder97/honeycomb-menu`, uninstall that installation through HACS before adding the new repository URL. After installing, check Dashboard Resources: remove the old fork resource `/hacsfiles/honeycomb-menu/pat97-honeycomb-menu.js` if it remains, and keep only the new PAT97 resource. Do not remove a separate upstream installation using `honeycomb-menu.js`. Reload the browser after switching resources. Renaming the repository does not itself migrate files already installed in Home Assistant.
 
 ### Manual
 
-1. Download `pat97-honeycomb-menu.js` from the [latest release](https://github.com/PATCoder97/honeycomb-menu/releases/latest).
+1. Download `pat97-honeycomb-menu.js` from the [latest release](https://github.com/PATCoder97/pat97-honeycomb-menu/releases/latest).
 1. Place the file into the `config/www` path of your home assistant installation
     > you can place into a sub directory if you have OCD like me :grinning: just remember to point the resource url with the sub path
 

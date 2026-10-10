@@ -1,7 +1,7 @@
 {
     "name": "pat97-honeycomb-menu",
     "private": true,
-    "version": "0.16.14",
+    "version": "0.16.15",
     "description": "Honeycomb popup menu with Mushroom styling for Home Assistant Lovelace cards",
     "scripts": {
         "build": "webpack",
@@ -10,7 +10,7 @@
     },
     "repository": {
         "type": "git",
-        "url": "github.com:PATCoder97/honeycomb-menu"
+        "url": "github.com:PATCoder97/pat97-honeycomb-menu"
     },
     "author": "Sian Croser",
     "license": "GPLv3",
