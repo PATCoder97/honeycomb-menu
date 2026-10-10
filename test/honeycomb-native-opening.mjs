@@ -52,7 +52,7 @@ async function record(page,count,theme) {
     const descendants=nodes(item.shadowRoot);const svg=descendants.find(e=>e.localName==='svg');const rect=item.getBoundingClientRect();const sr=svg?.getBoundingClientRect();const style=getComputedStyle(item);
     return {slot:item.dataset.honeycombSlot,visibility:style.visibility,opacity:Number(style.opacity),transform:style.transform,center:[rect.x+rect.width/2,rect.y+rect.height/2],svg:sr?[sr.x+sr.width/2,sr.y+sr.height/2,sr.width,sr.height]:null,path:svg?.querySelector('path')?.getAttribute('d')||''};
    })});
-   if(performance.now()-start>1200 && menu.hasAttribute('opening-ready') && frames.at(-1).cells.length===count && frames.at(-1).cells.every(c=>c.transform==='none')) break;
+   if(performance.now()-start>1200 && menu.hasAttribute('opening-ready') && frames.at(-1).cells.length===count && frames.at(-1).cells.every(c=>c.transform==='none' && c.opacity===1 && c.path) && [...menu.shadowRoot.querySelectorAll('pat97-honeycomb-menu-item')].every(e=>e.getAnimations().every(a=>a.playState==='finished' || a.playState==='idle'))) break;
   }
   return frames;
  },{count,theme});
@@ -62,18 +62,20 @@ function verify(frames,count) {
  for(let i=0;i<count;i++) {
   const end=last.cells[i];assert.equal(end.transform,'none');assert.ok(end.path,'Native SVG failed to load');
   const visible=frames.filter(f=>f.cells[i]?.visibility==='visible' && f.cells[i].opacity>0.001);
-  assert.ok(visible.some(f=>f.cells[i].transform!=='none'),'Opening zoom was not exercised');
-  let previousWidth=0;
+  assert.ok(visible.some(f=>f.cells[i].opacity<0.99),'Opening fade was not exercised');
+  let previousOpacity=0;
   for(const frame of visible){
    const cell=frame.cells[i];assert.equal(cell.path,end.path,'SVG appeared/changed while cell was visible');
    assert.ok(Math.hypot(cell.center[0]-end.center[0],cell.center[1]-end.center[1])<0.04,'Cell center jumped');
    assert.ok(Math.hypot(cell.svg[0]-end.svg[0],cell.svg[1]-end.svg[1])<0.04,'Native icon center jumped');
-   assert.ok(cell.svg[2]+0.04>=previousWidth,'Icon zoom reversed');previousWidth=cell.svg[2];
+   assert.equal(cell.transform,'none','Cell scaled during animation');
+   assert.ok(Math.abs(cell.svg[2]-end.svg[2])<0.04 && Math.abs(cell.svg[3]-end.svg[3])<0.04,'Icon size changed during animation');
+   assert.ok(cell.opacity+0.001>=previousOpacity,'Fade reversed');previousOpacity=cell.opacity;
   }
  }
 }
 try {
- // Negative control: current release starts zoom before delayed SVGs exist.
+ // Negative control: old release starts zoom before delayed SVGs exist.
  const old=await setup(1,true);
  await old.page.evaluate(()=>{window.testMenu=null;});
  const broken=await record(old.page,6,'dark');
@@ -84,8 +86,8 @@ try {
   const {context,page}=await setup(dpr);await page.evaluate(()=>{window.testMenu=null;});
   for(const theme of ['dark','light']) for(const count of [3,6,18]) {
    const id=`${theme}-${count}-dpr${dpr}`;
-   const frames=await record(page,count,theme);verify(frames,count);
-   await writeFile(`${output}/${id}-frames.json`,JSON.stringify(frames,null,2));
+   const frames=await record(page,count,theme);
+   await writeFile(`${output}/${id}-frames.json`,JSON.stringify(frames,null,2));verify(frames,count);
    const options={clip:{x:260,y:150,width:480,height:480}};
    await page.screenshot({...options,path:`${output}/${id}-rest.png`});
    const items=page.locator('pat97-honeycomb-menu-item');

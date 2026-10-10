@@ -63,17 +63,18 @@ try {
     const center = page.locator('pat97-honeycomb-menu-item.center-item');
     const opening = await page.evaluate(async () => {
       const item = testMenu.shadowRoot.querySelector('.center-item');
-      const zoom = item.getAnimations().find(animation => animation.animationName === 'zoomIn');
-      if(!zoom) throw new Error('Opening zoom missing');
-      zoom.pause(); zoom.currentTime=0;
-      const initial = getComputedStyle(item).transform;
+      const fade = item.getAnimations().find(animation => animation.animationName === 'fadeIn');
+      if(!fade) throw new Error('Opening fade missing');
+      fade.pause(); fade.currentTime=0;
+      const initial = {transform:getComputedStyle(item).transform,opacity:Number(getComputedStyle(item).opacity)};
       const all = [...new Set([...testMenu.shadowRoot.querySelectorAll('*')].flatMap(element => element.getAnimations()))];
       all.forEach(animation => animation.finish());
       await Promise.all(all.map(animation => animation.finished));
       await new Promise(resolve => requestAnimationFrame(resolve));
       return initial;
     });
-    assert.match(opening, /matrix(?:3d)?\(0\.3,/);
+    assert.equal(opening.transform,'none');
+    assert.equal(opening.opacity,0);
     const restGeometry = await page.evaluate(() => measureGeometry());
     checkGeometry(restGeometry,42);
     // Upstream does not transform on hover/press. Inspect the actual glyph
@@ -143,7 +144,7 @@ try {
     });
     const shifted = await page.evaluate(() => measureGeometry());
     assert.throws(() => checkGeometry(shifted), /Unequal/);
-    // Verify upstream close animations on real CSS animations, not selectors.
+    // Verify fade close animations on real CSS animations, not selectors.
     for(const selected of [false,true]) {
       await page.evaluate(() => renderMenu('pat97-honeycomb-menu', {size:260,spacing:1,count:6,center:true,animations:true}));
       const closing = await page.evaluate(async selected => {
@@ -155,22 +156,22 @@ try {
         await testMenu.updateComplete;
         const animations=[...new Set([...testMenu.shadowRoot.querySelectorAll('*')].flatMap(element=>element.getAnimations()))];
         animations.forEach(animation=>animation.pause());
-        const name=selected ? 'bounceOut' : 'zoomOut';
-        const zoom=item.getAnimations().find(animation=>animation.animationName===name);
-        if(!zoom) throw new Error(`Missing closing animation: ${name}`);
-        const duration=zoom.effect.getTiming().duration;
-        zoom.currentTime=duration/2;
+        const name='fadeOut';
+        const fade=item.getAnimations().find(animation=>animation.animationName===name);
+        if(!fade) throw new Error(`Missing closing animation: ${name}`);
+        const duration=fade.effect.getTiming().duration;
+        fade.currentTime=duration/2;
         const style=getComputedStyle(item);
         return {name,duration,scale:new DOMMatrixReadOnly(style.transform).a,opacity:Number(style.opacity),pointerEvents:style.pointerEvents};
       },selected);
       assert.equal(closing.duration,selected ? 750 : 500);
-      assert.ok(Math.abs(closing.scale-(selected ? 1.1 : 0.3)) < 0.00001);
-      assert.equal(closing.opacity,selected ? 1 : 0);
+      assert.equal(closing.scale,1);
+      assert.ok(closing.opacity > 0 && closing.opacity < 1);
       assert.equal(closing.pointerEvents,'none');
     }
     assert.deepEqual(errors, [], 'No browser JavaScript errors');
     await context.close();
   }
   await writeFile(`${output}/report.json`, JSON.stringify(report,null,2));
-  console.log(`PASS: ${report.length} renders; regular geometry within ${tolerance} CSS px; opening/closing zoom and bounce, unchanged hover glyph pixels and negative controls at DPR 1/2. HA icons remain test stubs. Report: ${output}`);
+  console.log(`PASS: ${report.length} renders; regular geometry within ${tolerance} CSS px; opening/closing fades, unchanged hover glyph pixels and negative controls at DPR 1/2. HA icons remain test stubs. Report: ${output}`);
 } finally { await browser.close(); }

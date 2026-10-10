@@ -61,8 +61,8 @@ for(const dpr of [1,1.25,1.5,2]) {
   assert.equal(await items.count(),count+(count===18?1:0));
   const geometry=await page.evaluate(()=>measureGeometry());
   assert.ok(geometry.edgeSpread<0.04 && geometry.maxGapError<0.04,JSON.stringify(geometry));
-  const retained=await page.evaluate(()=>[...testMenu.shadowRoot.querySelectorAll('pat97-honeycomb-menu-item')].flatMap(e=>e.getAnimations()).filter(a=>a.animationName==='zoomIn').length);
-  assert.equal(retained,0,'Opening retained a forward-filled zoom');
+  const retained=await page.evaluate(()=>[...testMenu.shadowRoot.querySelectorAll('pat97-honeycomb-menu-item')].flatMap(e=>e.getAnimations()).filter(a=>a.animationName==='fadeIn').length);
+  assert.equal(retained,0,'Opening retained a forward-filled fade');
   const bounds=await page.locator('#honeycombs').boundingBox();
   const clip={x:Math.floor(bounds.x)-5,y:Math.floor(bounds.y)-5,width:Math.ceil(bounds.width)+12,height:Math.ceil(bounds.height)+12};
   const rest=await page.screenshot({clip,path:`${output}/${id}-rest.png`});
@@ -95,7 +95,7 @@ for(const dpr of [1,1.25,1.5,2]) {
   await page.locator('#launcher').click();await page.mouse.move(900,700);
   await waitForRest(page);
   assert.ok(reference.equals(await page.screenshot({clip,path:`${output}/${id}-reopened.png`})),`Reopen changed pixels: ${id}`);
-  // A real button-card tap and its selected bounce close (no direct .close()).
+  // A real button-card tap and its selected fade close (no direct .close()).
   await page.evaluate(()=>{window.testHassActions=[];});
   // Slot 0 is the configured button, not the optional center more-info card.
   await page.locator('pat97-honeycomb-menu-item[data-honeycomb-slot="0"]').locator('ha-card').click();
@@ -111,12 +111,12 @@ for(const dpr of [1,1.25,1.5,2]) {
   const control=await page.screenshot({clip});
   await page.evaluate(()=>{
     const s=document.createElement('style');
-    s.textContent=':host(:not([closing])) pat97-honeycomb-menu-item {animation-fill-mode:both!important}';
+    s.textContent=':host(:not([closing])) pat97-honeycomb-menu-item {transform:scale(0.97)!important}';
     testMenu.shadowRoot.append(s);
   });
   await waitForRest(page);
-  const negative=await page.screenshot({clip,path:`${output}/${id}-forward-fill-regression.png`});
-  assert.ok(!control.equals(negative),`Pixel test missed forward-fill regression: ${id}`);
+  const negative=await page.screenshot({clip,path:`${output}/${id}-scale-regression.png`});
+  assert.ok(!control.equals(negative),`Pixel test missed scale regression: ${id}`);
   await page.evaluate(()=>testMenu.remove());
   report.push({id,dpr,theme,count,geometry,pixelParity:true,negativeControlRejected:true,reopened:true,selectedClose:true});
  }

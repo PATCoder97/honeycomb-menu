@@ -21,7 +21,10 @@ for( const name of [
     'MutationObserver',
     'navigator'
 ] )
-    globalThis[name] = name === 'window' ? browser : browser[name];
+    Object.defineProperty(globalThis, name, {
+        configurable: true, writable: true,
+        value: name === 'window' ? browser : browser[name]
+    });
 
 globalThis.self = browser;
 globalThis.getComputedStyle = browser.getComputedStyle.bind(browser);
@@ -280,9 +283,9 @@ test('center close uses the selected animation and cards keep a regular hexagon 
     assert.doesNotMatch(menuStyles, /transition:\s*transform|scale3d\(1\.04|scale3d\(1\.08/);
     assert.match(menuStyles, /pat97-honeycomb-menu-item, pat97-xy-pad\s*\{[^}]*animation-fill-mode:\s*backwards/);
     assert.match(menuStyles, /:host\(\[closing\]\) pat97-xy-pad\s*\{[^}]*animation-fill-mode:\s*both/);
-    assert.match(menuStyles, /animation-name:\s*zoomIn/);
-    assert.match(menuStyles, /animation-name:\s*zoomOut/);
-    assert.match(menuStyles, /animation-name:\s*bounceOut/);
+    assert.match(menuStyles, /animation-name:\s*fadeIn/);
+    assert.match(menuStyles, /animation-name:\s*fadeOut/);
+    assert.doesNotMatch(menuStyles, /scale\(|scale3d\(|@keyframes (zoom|bounce)/);
 
     center.dispatchEvent(new browser.Event('animationend'));
     assert.equal(menu.isConnected, false);
@@ -361,12 +364,12 @@ test('closing before content readiness never restarts the opening', async () => 
     finishClose(menu);
 });
 
-test('only button-card icons get a stable raster layer and user transforms win', () => {
+test('icon styles stay untouched and user transforms are preserved', () => {
     const item = browser.document.createElement('pat97-honeycomb-menu-item');
     item.hass = browser.document.querySelector('home-assistant').hass;
     item.config = {entity:'light.room',icon:'mdi:lightbulb',styles:{icon:[{color:'red'}]}};
     let card = item._createLovelaceCard();
-    assert.equal(card.config.styles.icon[0].transform,'translateZ(0)');
+    assert.equal(card.config.styles.icon[0].transform,undefined);
     assert.equal(card.config.styles.icon[0].color,'red');
     assert.equal(item.config.styles.icon[0].transform,undefined,'Caller styles were mutated');
     item.config = {entity:'light.room',styles:{icon:[{transform:'rotate(10deg)'}]}};

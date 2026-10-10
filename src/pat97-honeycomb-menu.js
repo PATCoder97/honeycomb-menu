@@ -203,50 +203,6 @@ class Pat97HoneycombMenu extends LitElement
         return css`
             @keyframes fadeIn { from {opacity: 0; } to { opacity: 1; } }
             @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
-            @keyframes zoomIn {
-            from {
-                opacity: 0;
-                transform: scale3d(0.3, 0.3, 0.3);
-            }
-            50% {
-                opacity: 1;
-            }
-            }
-            @keyframes zoomOut {
-            from {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0;
-                transform: scale3d(0.3, 0.3, 0.3);
-            }
-
-            to {
-                opacity: 0;
-            }
-            }
-
-            @keyframes bounceOut {
-            20% {
-                -webkit-transform: scale3d(0.9, 0.9, 0.9);
-                transform: scale3d(0.9, 0.9, 0.9);
-            }
-
-            50%,
-            55% {
-                opacity: 1;
-                -webkit-transform: scale3d(1.1, 1.1, 1.1);
-                transform: scale3d(1.1, 1.1, 1.1);
-            }
-
-            to {
-                opacity: 0;
-                -webkit-transform: scale3d(0.3, 0.3, 0.3);
-                transform: scale3d(0.3, 0.3, 0.3);
-            }
-            }
-
             :host {
                 position: absolute;
                 z-index: 8; /*200;*/
@@ -297,10 +253,10 @@ class Pat97HoneycombMenu extends LitElement
             }
             pat97-honeycomb-menu-item, pat97-xy-pad {
                 animation-duration: 0.5s;
-                /* Keep delayed items hidden, but release the transform once
-                   opening ends. Forward fill changes resting edge pixels. */
+                /* Fade at the final size: scaling a clipped cell also scales
+                   its SVG and changes glyph rasterization during motion. */
                 animation-fill-mode: backwards;
-                animation-name: zoomIn;
+                animation-name: fadeIn;
             }
             :host(:not([opening-ready]):not([closing])) pat97-honeycomb-menu-item,
             :host(:not([opening-ready]):not([closing])) pat97-xy-pad {
@@ -310,11 +266,11 @@ class Pat97HoneycombMenu extends LitElement
             }
             :host([closing]) pat97-honeycomb-menu-item, :host([closing]) pat97-xy-pad {
                 animation-fill-mode: both;
-                animation-name: zoomOut;
+                animation-name: fadeOut;
             }
             :host([closing]) pat97-honeycomb-menu-item[selected] {
                 animation-duration: 0.75s;
-                animation-name: bounceOut;
+                animation-name: fadeOut;
             }
             pat97-xy-pad {
                 width: var(--container-width);

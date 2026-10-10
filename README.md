@@ -30,6 +30,8 @@ The module uses a hierarchy override for honeycomb options and sub options so yo
 
 ### HACS (recommended)
 
+Release **0.16.16** replaces cell zoom/bounce with fades to keep icons at a fixed size during opening and closing. Update through HACS, then reload the browser to load the new JavaScript.
+
 1. Open HACS, select the three-dot menu, then select **Custom repositories**.
 1. Add `https://github.com/PATCoder97/pat97-honeycomb-menu` with category **Dashboard**.
 1. Install **PAT97 Honeycomb Menu** and restart Home Assistant.
@@ -121,11 +123,11 @@ Any other options for `Button:type` | - | - | -
 
 ## Extended layout example
 
-All new interaction features are opt-in. The original six slot assignments are preserved. Shapes use regular hexagons with a height/width ratio of `2 / sqrt(3)` and one row step of `sqrt(3) / 2`. Every perpendicular neighbor gap is `2 × spacing` after the opening animation. Motion follows the upstream module: 500 ms opening/closing zoom and 750 ms bounce for the selected closing button. The module does not scale or brighten cells on ordinary hover/press, patch icon shadow DOM, or counter-scale icons; the underlying card retains its own interaction feedback. Opt-in drag highlighting only brightens the selected cell without changing its geometry. Browser layout rounding and edge anti-aliasing can still affect individual pixels.
+All new interaction features are opt-in. The original six slot assignments are preserved. Shapes use regular hexagons with a height/width ratio of `2 / sqrt(3)` and one row step of `sqrt(3) / 2`. Every perpendicular neighbor gap is `2 × spacing` after the opening animation. Motion uses 500 ms opening/closing fades and a 750 ms fade for the selected closing button. Cells and icons stay at their final size throughout each animation. The module does not scale or brighten cells on ordinary hover/press, patch icon shadow DOM, or counter-scale icons; the underlying card retains its own interaction feedback. Opt-in drag highlighting only brightens the selected cell without changing its geometry. Browser layout rounding and edge anti-aliasing can still affect individual pixels.
 
-Default button-card icon styles include `transform: translateZ(0)` to keep the glyph raster layer stable when opening zoom ends. This identity transform does not resize or move the icon, and does not promote the polygon/card layer. Explicit user icon transforms override it; other custom card types are untouched.
+The menu does not inject icon transforms or force GPU layers. User-defined icon styles are preserved. Removing cell zoom avoids resampling SVG glyphs inside clipped and filtered layers during opening and closing.
 
-Opening animations use backward fill only: delayed buttons stay hidden, but the zoom releases its transform when finished. Closing animations keep forward fill until the menu is removed. This avoids a completed opening zoom changing the resting polygon's edge rasterization.
+Opening animations use backward fill only: delayed buttons stay hidden, and the fade releases its opacity when finished. Closing animations keep forward fill until the menu is removed. No menu keyframe changes cell or icon scale.
 
 Before opening, the menu waits for card rendering and nested HA SVG icons to settle. Cold icon loading can delay the first opening; a 1500 ms fallback prevents a missing/custom icon from blocking the menu indefinitely. Closing or removing a pending menu cancels the opening. This readiness step does not change hexagon geometry or remove the opening/closing effects.
 

@@ -1,4 +1,4 @@
-// Isolate the last zoom frame -> resting SVG raster handoff, not just bounds.
+// Compare old zoom/current fade at the final frame -> resting SVG raster handoff.
 // Natural opening/click flows are covered by the other browser suites.
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
@@ -52,7 +52,7 @@ try {
     await page.waitForFunction(()=>rasterMenu.shadowRoot.querySelector('#shade').getAnimations().every(a=>a.playState==='finished'));
     const item=page.locator(center?`${tag}-item.center-item`:`${tag}-item`).first();const svg=item.locator('ha-svg-icon svg');const bounds=await svg.boundingBox();
     const clip={x:Math.floor(bounds.x+bounds.width/2)-20,y:Math.floor(bounds.y+bounds.height/2)-20,width:40,height:40};
-    // Restart only the cell zoom after native SVG loading; force forward fill
+    // Restart the cell animation after native SVG loading; force forward fill
     // at its final instant to sample the compositor's in-animation raster.
     await page.evaluate(tag=>{
      const style=document.createElement('style');style.textContent=`${tag}-item {animation-fill-mode:both!important}`;rasterMenu.shadowRoot.append(style);
@@ -65,26 +65,7 @@ try {
     const rest=await page.screenshot({clip,path:`${output}/${id}-rest.png`});
     assert.deepEqual(await svg.boundingBox(),bounds,'Resting icon dimensions changed');
     const equal=last.equals(rest);
-    if(tag==='pat97-honeycomb-menu')assert.ok(equal,`Icon raster changed at zoom end: ${id}`);
-    if(tag==='pat97-honeycomb-menu') {
-     // Use stationary integer masks. Playwright's automatic masks follow the
-     // transformed icon bounds and can round differently with/without a layer.
-     const rects=await page.locator(`${tag}-item ha-state-icon`).evaluateAll(elements=>elements.map(e=>{const r=e.getBoundingClientRect();return {x:Math.floor(r.x)-2,y:Math.floor(r.y)-2,w:Math.ceil(r.width)+4,h:Math.ceil(r.height)+4};}));
-     await page.evaluate(rects=>{window.edgeMasks=rects.map(r=>{const e=document.createElement('div');e.style.cssText=`position:fixed;left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px;background:magenta;z-index:2147483647`;document.body.append(e);return e;});},rects);
-     const options={clip:{x:260,y:150,width:480,height:480}};
-     const stableEdges=await page.screenshot({...options,path:`${output}/${id}-edges-layer.png`});
-     await item.locator('ha-state-icon#icon').evaluate(e=>e.style.transform='none');
-     const ordinaryEdges=await page.screenshot({...options,path:`${output}/${id}-edges-no-layer.png` });
-     const edgeDelta=await page.evaluate(async urls=>{const data=[];for(const url of urls){const image=new Image();image.src=url;await image.decode();const canvas=document.createElement('canvas');canvas.width=image.width;canvas.height=image.height;const ctx=canvas.getContext('2d');ctx.drawImage(image,0,0);data.push(ctx.getImageData(0,0,canvas.width,canvas.height).data);}return data[0].reduce((max,value,i)=>Math.max(max,Math.abs(value-data[1][i])),0);},[stableEdges,ordinaryEdges].map(buffer=>`data:image/png;base64,${buffer.toString('base64')}`));
-     // Switching compositing off deliberately can change ancestor edge AA.
-     // Record that difference, never call it pixel parity. Geometry must stay
-     // identical, and the actual zoom handoff above still needs exact glyphs.
-     const polygonBounds=await item.boundingBox();
-     await item.locator('ha-state-icon#icon').evaluate(e=>e.style.removeProperty('transform'));
-     assert.deepEqual(await item.boundingBox(),polygonBounds,`Icon layer moved the polygon: ${id}`);
-     report.push({id:`${id}-layer-control`,edgeDelta,polygonBounds});
-     await page.evaluate(()=>edgeMasks.forEach(e=>e.remove()));
-    }
+    if(tag==='pat97-honeycomb-menu')assert.ok(equal,`Icon raster changed at animation end: ${id}`);
     report.push({id,dpr,tag,icon,pixelEqual:equal});
    }
   }
