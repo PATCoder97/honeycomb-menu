@@ -233,6 +233,31 @@ test('extended render supports seven visible slots, center button, defaults and 
     assert.equal(menu.isConnected, false);
 });
 
+test('center close uses the selected animation and cards keep an outer hexagon mask', async () => {
+    const menu = await renderMenu({
+        entity: 'light.room',
+        buttons: [button(0)],
+        center_button: {
+            icon: 'mdi:close',
+            autoclose: false,
+            tap_action: { action: 'honeycomb-close' }
+        }
+    });
+    const center = menu.shadowRoot.querySelector('.center-item');
+
+    menu._triggerMenuItemTap(center);
+
+    assert.equal(menu.closing, true);
+    assert.equal(center.hasAttribute('selected'), true);
+    assert.match(
+        browser.customElements.get('pat97-honeycomb-menu-item').styles.cssText,
+        /clip-path:\s*polygon\(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%\)/
+    );
+
+    center.dispatchEvent(new browser.Event('animationend'));
+    assert.equal(menu.isConnected, false);
+});
+
 test('idle timeout closes an inactive menu', async () => {
     const menu = await renderMenu({
         entity: 'light.room',

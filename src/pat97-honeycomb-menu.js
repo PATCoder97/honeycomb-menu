@@ -638,7 +638,8 @@ class Pat97HoneycombMenu extends LitElement
         if( configuredAction === 'honeycomb-close' )
         {
             e.stopPropagation();
-            honeycombClose();
+            manager.history.clear();
+            this.close(item);
             return;
         }
 

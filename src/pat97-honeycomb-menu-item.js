@@ -116,6 +116,11 @@ class Pat97HoneycombMenuItem extends LitElement
                 --ha-card-background: var(--ha-card-active-background);
                 --paper-item-icon-color: var(--paper-item-icon-active-color);
             }
+            .honeycomb {
+                width: 100%;
+                overflow: hidden;
+                clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+            }
             .honey {
                 list-style-type: none;
                 position: relative;
