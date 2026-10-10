@@ -298,6 +298,7 @@ class Pat97HoneycombMenu extends LitElement
                 :host(:not([closing])) pat97-honeycomb-menu-item:not(.drag-hover):not([disabled]):hover {
                     filter: brightness(1.08);
                     transform: scale3d(1.04, 1.04, 1.04);
+                    --pat97-honeycomb-icon-scale: 0.9615384615384615;
                     z-index: 3;
                 }
                 :host(:not([closing])) pat97-honeycomb-menu-item.center-item:not(.drag-hover):not([disabled]):hover {
@@ -307,10 +308,12 @@ class Pat97HoneycombMenu extends LitElement
             :host(:not([closing])) pat97-honeycomb-menu-item:not(.drag-hover):not([disabled]):active {
                 filter: brightness(0.96);
                 transform: scale3d(0.96, 0.96, 0.96);
+                --pat97-honeycomb-icon-scale: 1.0416666666666667;
             }
             pat97-honeycomb-menu-item.drag-hover {
                 filter: brightness(1.18);
                 transform: scale3d(1.08, 1.08, 1.08);
+                --pat97-honeycomb-icon-scale: 0.9259259259259259;
                 z-index: 3;
             }
             pat97-honeycomb-menu-item.center-item.drag-hover {

@@ -173,6 +173,66 @@ try {
     assert.ok(intermediateScales.size >= 3, 'Zoom must interpolate, not jump between endpoints');
     checkGeometry(await page.evaluate(() => measureGeometry()), 42);
     assert.ok(edgeReference.equals(await page.screenshot({ ...edgeShotOptions, path:`${output}/edge-after-hover-dpr${dpr}.png` })), 'Hover left different resting edge pixels');
+    // Inspect the asymmetric SVG's pixels too, not just its host rectangle.
+    // Freeze both transitions at the same timestamps for reproducible frames.
+    const glyphRest = await center.evaluate(item => {
+      const icon = item.shadowRoot.querySelector('button-card').shadowRoot.querySelector('ha-state-icon, ha-icon');
+      const rect = icon.getBoundingClientRect();
+      return { x:rect.x+rect.width/2, y:rect.y+rect.height/2, width:rect.width };
+    });
+    await page.mouse.move(glyphRest.x,glyphRest.y);
+    await center.evaluate(item => {
+      const icon = item.shadowRoot.querySelector('button-card').shadowRoot.querySelector('ha-state-icon, ha-icon');
+      for(const animation of [...item.getAnimations(), ...icon.getAnimations()]) { animation.pause(); animation.currentTime = 0; }
+    });
+    const glyphFrames = [];
+    const clip = { x:Math.floor(glyphRest.x-23), y:Math.floor(glyphRest.y-23), width:46, height:46 };
+    for(const time of [0,16,32,48,64,80,100,140,180,220]) {
+      const rect = await center.evaluate((item,time) => {
+        const icon = item.shadowRoot.querySelector('button-card').shadowRoot.querySelector('ha-state-icon, ha-icon');
+        for(const animation of [...item.getAnimations(), ...icon.getAnimations()]) animation.currentTime = time;
+        const rect = icon.getBoundingClientRect();
+        return { x:rect.x+rect.width/2, y:rect.y+rect.height/2, width:rect.width };
+      },time);
+      assert.ok(Math.abs(rect.width-glyphRest.width) < 0.02, 'Hover changed glyph size');
+      assert.ok(Math.hypot(rect.x-glyphRest.x,rect.y-glyphRest.y) < 0.02, 'Hover translated the glyph');
+      const png = await page.screenshot({ clip, path:`${output}/glyph-${time}-dpr${dpr}.png` });
+      const centroid = await page.evaluate(async base64 => {
+        const image = new Image(); image.src = 'data:image/png;base64,'+base64; await image.decode();
+        const canvas = document.createElement('canvas'); canvas.width = image.width; canvas.height = image.height;
+        const ctx = canvas.getContext('2d'); ctx.drawImage(image,0,0);
+        const pixels = ctx.getImageData(0,0,canvas.width,canvas.height).data;
+        let mass=0,x=0,y=0;
+        for(let row=0;row<canvas.height;row++) for(let col=0;col<canvas.width;col++) {
+          const weight = (255-pixels[(row*canvas.width+col)*4])/255;
+          mass += weight; x += (col+0.5)*weight; y += (row+0.5)*weight;
+        }
+        return { x:x/mass, y:y/mass };
+      },png.toString('base64'));
+      glyphFrames.push({ time, x:centroid.x/dpr, y:centroid.y/dpr });
+    }
+    // Subpixel antialiasing/brightness can change mass slightly; reject visible
+    // pixel jumps while retaining these frame images for visual inspection.
+    for(const axis of ['x','y'])
+      assert.ok(Math.max(...glyphFrames.map(f=>f[axis]))-Math.min(...glyphFrames.map(f=>f[axis])) < 0.25, `Glyph raster shifted on ${axis}`);
+    await writeFile(`${output}/glyph-motion-dpr${dpr}.json`,JSON.stringify(glyphFrames,null,2));
+    // Negative control: the old whole-icon zoom must fail the size invariant.
+    await center.evaluate(item => {
+      const icon=item.shadowRoot.querySelector('button-card').shadowRoot.querySelector('ha-state-icon, ha-icon');
+      icon.style.setProperty('scale','1','important'); icon.style.setProperty('transition','none','important');
+    });
+    assert.ok(await center.evaluate((item,width) => {
+      const icon=item.shadowRoot.querySelector('button-card').shadowRoot.querySelector('ha-state-icon, ha-icon');
+      return Math.abs(icon.getBoundingClientRect().width-width) > 1;
+    },glyphRest.width), 'Glyph test missed the old icon zoom');
+    await center.evaluate(item => {
+      const icon=item.shadowRoot.querySelector('button-card').shadowRoot.querySelector('ha-state-icon, ha-icon');
+      icon.style.removeProperty('scale'); icon.style.removeProperty('transition');
+      for(const animation of [...item.getAnimations(), ...icon.getAnimations()]) animation.finish();
+    });
+    await page.mouse.move(900,700);
+    await page.waitForTimeout(300);
+    assert.ok(edgeReference.equals(await page.screenshot(edgeShotOptions)), 'Glyph stabilization changed resting edge pixels');
     // Negative controls: the verifier must reject the two previous regressions.
     await page.evaluate(() => {
       for( const item of testMenu.shadowRoot.querySelectorAll('pat97-honeycomb-menu-item') ) {
@@ -194,5 +254,5 @@ try {
     await context.close();
   }
   await writeFile(`${output}/report.json`, JSON.stringify(report,null,2));
-  console.log(`PASS: ${report.length} actual renders; six edges and neighbor gaps within ${tolerance} CSS px; hover/press/drag-hover, resting edge pixel parity and negative controls at DPR 1/2. Report: ${output}`);
+  console.log(`PASS: ${report.length} actual renders; six edges and neighbor gaps within ${tolerance} CSS px; hover/press/drag-hover, stable glyph bounds/pixels, resting edge pixel parity and negative controls at DPR 1/2. Report: ${output}`);
 } finally { await browser.close(); }

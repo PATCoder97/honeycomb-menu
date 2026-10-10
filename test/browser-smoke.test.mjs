@@ -206,7 +206,7 @@ test('extended render supports seven visible slots, center button, defaults and 
         buttons,
         empty_slots: 'hidden',
         center_button: {},
-        button_defaults: { color: 'var(--primary-color)' },
+        button_defaults: { color: 'var(--primary-color)', styles: { icon: [{ transform: 'rotate(20deg)' }] } },
         drag_select: true
     });
     const items = [...menu.shadowRoot.querySelectorAll('pat97-honeycomb-menu-item')];
@@ -227,8 +227,9 @@ test('extended render supports seven visible slots, center button, defaults and 
     assert.equal(menu.style.getPropertyValue('--spacing'), `${menu.sizes.spacing}px`);
 
     const wrappedCard = ringItems[0].shadowRoot.querySelector('#item > *');
-    assert.equal(wrappedCard.config.styles.icon[0]['will-change'], 'transform');
-    assert.equal(wrappedCard.config.styles.icon[0]['backface-visibility'], 'hidden');
+    assert.equal(wrappedCard.config.styles.icon[0].scale, 'var(--pat97-honeycomb-icon-scale, 1)');
+    assert.equal(wrappedCard.config.styles.icon[0].transition, 'scale 220ms cubic-bezier(0.2, 0, 0.2, 1)');
+    assert.equal(wrappedCard.config.styles.icon.at(-1).transform, 'rotate(20deg)');
     const actionTarget = wrappedCard.shadowRoot.querySelector('ha-card');
     let action;
     actionTarget.addEventListener('action', event => action = event.detail.action);
