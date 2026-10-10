@@ -204,7 +204,6 @@ class Pat97HoneycombMenu extends LitElement
             @keyframes zoomIn {
             from {
                 opacity: 0;
-                transform: scale3d(0.3, 0.3, 0.3);
             }
             50% {
                 opacity: 1;
@@ -269,8 +268,8 @@ class Pat97HoneycombMenu extends LitElement
                 animation-duration: 500ms;
             }
             .honeycombs {
-                --filter-color: rgba(0, 0, 0, 0.76);
-                filter: drop-shadow(2px 4px 3px var(--filter-color) );
+                --filter-color: rgba(0, 0, 0, 0.28);
+                filter: drop-shadow(0 0 2px var(--filter-color));
                 width: var(--container-width);
                 height: var(--container-height);
                 pointer-events: none;
@@ -282,7 +281,7 @@ class Pat97HoneycombMenu extends LitElement
                 width: var(--item-size);
                 padding: var(--spacing);
                 transform-origin: center;
-                transition: transform 160ms ease, filter 160ms ease;
+                transition: filter 160ms ease;
             }
             pat97-honeycomb-menu-item.center-item {
                 z-index: 2;
@@ -291,7 +290,6 @@ class Pat97HoneycombMenu extends LitElement
             @media (hover: hover) and (pointer: fine) {
                 :host(:not([closing])) pat97-honeycomb-menu-item:not(.drag-hover):not([disabled]):hover {
                     filter: brightness(1.08);
-                    transform: scale3d(1.04, 1.04, 1.04);
                     z-index: 3;
                 }
                 :host(:not([closing])) pat97-honeycomb-menu-item.center-item:not(.drag-hover):not([disabled]):hover {
@@ -299,11 +297,10 @@ class Pat97HoneycombMenu extends LitElement
                 }
             }
             :host(:not([closing])) pat97-honeycomb-menu-item:not(.drag-hover):not([disabled]):active {
-                transform: scale3d(0.96, 0.96, 0.96);
+                filter: brightness(0.96);
             }
             pat97-honeycomb-menu-item.drag-hover {
                 filter: brightness(1.18);
-                transform: scale3d(1.08, 1.08, 1.08);
                 z-index: 3;
             }
             pat97-honeycomb-menu-item.center-item.drag-hover {
@@ -599,6 +596,7 @@ class Pat97HoneycombMenu extends LitElement
         this.style.setProperty('--container-height', `${this.sizes.containerHeight}px`);
 
         this.style.setProperty('--spacing', `${this.sizes.spacing}px`);
+        this.style.setProperty('--hexagon-width', `${this.sizes.hexagonWidth}px`);
         this.style.setProperty('--hexagon-height', `${this.sizes.hexagonHeight}px`);
         const centerBrightness = Number(this.config.center_brightness);
         const centerBrightnessFactor = Number.isFinite(centerBrightness)

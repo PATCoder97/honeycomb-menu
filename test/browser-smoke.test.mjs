@@ -238,7 +238,7 @@ test('extended render supports seven visible slots, center button, defaults and 
     assert.equal(menu.isConnected, false);
 });
 
-test('center close uses the selected animation and cards keep the upstream hexagon transform', async () => {
+test('center close uses the selected animation and cards keep a regular hexagon mask', async () => {
     const menu = await renderMenu({
         entity: 'light.room',
         buttons: [button(0)],
@@ -256,26 +256,26 @@ test('center close uses the selected animation and cards keep the upstream hexag
     assert.equal(center.hasAttribute('selected'), true);
     assert.match(
         browser.customElements.get('pat97-honeycomb-menu-item').styles.cssText,
-        /transform:\s*rotate\(-60deg\) skewY\(30deg\)/
+        /clip-path:\s*polygon\(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%\)/
     );
     assert.match(
         browser.customElements.get('pat97-honeycomb-menu-item').styles.cssText,
-        /transform:\s*skewY\(-30deg\) rotate\(60deg\)/
+        /width:\s*var\(--hexagon-width\)/
     );
     assert.match(
         browser.customElements.get('pat97-honeycomb-menu-item').styles.cssText,
-        /padding:\s*0 0 114\.76% 0/
+        /height:\s*var\(--hexagon-height\)/
     );
-    assert.match(
+    assert.doesNotMatch(
         browser.customElements.get('pat97-honeycomb-menu-item').styles.cssText,
-        /\.comb\s*\{[\s\S]*visibility:\s*visible/
+        /skewY\(|114\.76%/
     );
 
     const menuStyles = browser.customElements.get('pat97-honeycomb-menu').styles.cssText;
     assert.match(menuStyles, /@media\s*\(hover:\s*hover\)\s*and\s*\(pointer:\s*fine\)/);
     assert.match(menuStyles, /:not\(\.drag-hover\):not\(\[disabled\]\):hover/);
-    assert.match(menuStyles, /scale3d\(1\.04,\s*1\.04,\s*1\.04\)/);
-    assert.match(menuStyles, /transition:\s*transform 160ms ease,\s*filter 160ms ease/);
+    assert.match(menuStyles, /filter:\s*brightness\(1\.08\)/);
+    assert.match(menuStyles, /transition:\s*filter 160ms ease/);
 
     center.dispatchEvent(new browser.Event('animationend'));
     assert.equal(menu.isConnected, false);

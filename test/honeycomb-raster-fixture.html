@@ -1,0 +1,128 @@
+<!doctype html>
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; background: #929292; font-family: sans-serif; }
+  :root {
+    --card-background-color: white;
+    --ha-card-background: white;
+    --paper-card-background-color: white;
+    --paper-card-active-background-color: white;
+    --honeycomb-menu-background-color: white;
+    --honeycomb-menu-active-background-color: white;
+    --pat97-honeycomb-menu-control-background: white;
+    --primary-text-color: #171717;
+    --secondary-text-color: #171717;
+    --paper-item-icon-color: #171717;
+    --ha-card-border-width: 0;
+    --ha-card-border-radius: 0;
+  }
+  #view { width: 1000px; height: 800px; padding: 0; position: relative; }
+</style>
+<home-assistant></home-assistant>
+<div id="view"></div>
+<script>
+  const hass = {
+    states: { 'light.room': { entity_id: 'light.room', state: 'on', attributes: { friendly_name: 'Room' } } },
+    user: { id: 'raster-test', name: 'Test' },
+    config: { unit_system: { length: 'km', temperature: '°C' } },
+    locale: { language: 'en', number_format: 'language', time_format: 'language' },
+    themes: { default_theme: 'default', themes: {}, darkMode: false },
+    localize: key => key,
+    callService: async () => {},
+    formatEntityState: state => state.state
+  };
+  class HomeAssistant extends HTMLElement {
+    constructor() { super(); this.hass = hass; }
+    provideHass(element) { element.hass = hass; }
+  }
+  class HACard extends HTMLElement {
+    constructor() {
+      super();
+      this.attachShadow({ mode: 'open' }).innerHTML = '<style>:host{display:block;background:var(--ha-card-background,white);box-sizing:border-box}</style><slot></slot>';
+    }
+  }
+  class HAIcon extends HTMLElement {
+    constructor() {
+      super();
+      this.attachShadow({ mode: 'open' }).innerHTML = '<style>:host{display:block}.icon{display:flex;align-items:center;justify-content:center;width:100%;height:100%}svg{width:24px;height:24px;flex:none;fill:currentColor}</style><div class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/></svg></div>';
+    }
+  }
+  customElements.define('home-assistant', HomeAssistant);
+  customElements.define('ha-card', HACard);
+  customElements.define('ha-icon', HAIcon);
+  customElements.define('ha-state-icon', class extends HAIcon {});
+  customElements.define('hui-error-card', class extends HTMLElement { setConfig(config) { throw new Error(JSON.stringify(config)); } });
+  window.renderMenu = async (tag, options) => {
+    document.querySelector('#view').replaceChildren();
+    const menu = document.createElement(tag);
+    const config = {
+      entity: 'light.room', style: 'mushroom', size: options.size, spacing: options.spacing,
+      animation_speed: 0, empty_slots: options.emptySlots || 'visible',
+      center_button: options.center ? { icon: 'mdi:close' } : false,
+      buttons: Array.from({ length: options.count }, () => [{ icon: 'mdi:lightbulb', show_name: false, show_state: false }])
+    };
+    menu.setConfig(config);
+    menu.display(document.querySelector('#view'), 500, 400);
+    await menu.updateComplete;
+    menu.style.left = '20px';
+    menu.style.top = '20px';
+    const style = document.createElement('style');
+    style.textContent = '* { animation: none !important; transition: none !important; }';
+    menu.shadowRoot.append(style);
+    const items = [...menu.shadowRoot.querySelectorAll(`${tag}-item`)];
+    await Promise.all(items.map(item => item.updateComplete));
+    await Promise.all(items.map(async item => {
+      const card = item.shadowRoot.querySelector('button-card');
+      if( card ) await card.updateComplete;
+    }));
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    window.testMenu = menu;
+    return {
+      count: items.length,
+      errors: items.filter(item => item.shadowRoot.querySelector('hui-error-card')).length,
+      width: menu.sizes.containerWidth,
+      height: menu.sizes.containerHeight
+    };
+  };
+  window.measureGeometry = () => {
+    const cells = [...testMenu.shadowRoot.querySelectorAll('pat97-honeycomb-menu-item')].map(item => {
+      const shape = item.shadowRoot.querySelector('.honey');
+      const rect = shape.getBoundingClientRect();
+      const card = item.shadowRoot.querySelector('button-card');
+      if( card ) {
+        const cardRect = card.shadowRoot.querySelector('ha-card').getBoundingClientRect();
+        for( const key of ['x', 'y', 'width', 'height'] )
+          if( Math.abs(cardRect[key]-rect[key]) > 0.04 ) throw new Error(`Card escaped its hexagon: ${key}`);
+      }
+      const polygon = getComputedStyle(shape).clipPath.match(/[\d.]+(?:%|px)/g);
+      if( !polygon || polygon.length !== 12 ) throw new Error('Expected six polygon vertices');
+      const length = (value, extent) => parseFloat(value) * (value.endsWith('%') ? extent/100 : 1);
+      const points = Array.from({length:6}, (_, i) => ({
+        x: rect.x + length(polygon[i*2], rect.width),
+        y: rect.y + length(polygon[i*2+1], rect.height)
+      }));
+      return { points, x: rect.x + rect.width/2, y: rect.y + rect.height/2 };
+    });
+    const edges = cells.flatMap(cell => cell.points.map((point, i) => {
+      const next = cell.points[(i+1)%6];
+      return Math.hypot(next.x-point.x,next.y-point.y);
+    }));
+    const gaps = [];
+    const step = testMenu.sizes.item;
+    for( let a=0; a<cells.length; a++ ) {
+      for( let b=a+1; b<cells.length; b++ ) {
+        const dx=cells[b].x-cells[a].x, dy=cells[b].y-cells[a].y;
+        const distance=Math.hypot(dx,dy);
+        if( distance > step*1.01 ) continue;
+        const projection = point => (point.x*dx+point.y*dy)/distance;
+        gaps.push(Math.min(...cells[b].points.map(projection))-Math.max(...cells[a].points.map(projection)));
+      }
+    }
+    return {
+      edgeSpread: Math.max(...edges)-Math.min(...edges),
+      neighborPairs: gaps.length,
+      minGap: Math.min(...gaps), maxGap: Math.max(...gaps),
+      maxGapError: Math.max(...gaps.map(gap => Math.abs(gap-testMenu.sizes.spacing*2)))
+    };
+  };
+</script>

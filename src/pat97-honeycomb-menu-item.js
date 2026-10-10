@@ -119,12 +119,11 @@ class Pat97HoneycombMenuItem extends LitElement
             .honey {
                 list-style-type: none;
                 position: relative;
-                display: inline-block;
-                width: 100%;
-                padding: 0 0 114.76% 0;
-                transform: rotate(-60deg) skewY(30deg);
+                display: block;
+                width: var(--hexagon-width);
+                height: var(--hexagon-height);
+                clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
                 overflow: hidden;
-                visibility: hidden;
                 z-index:100;
             }
             .comb {
@@ -133,14 +132,9 @@ class Pat97HoneycombMenuItem extends LitElement
                 left: 0;
                 width: 100%;
                 height: 100%;
-                transform: skewY(-30deg) rotate(60deg);
                 overflow: hidden;
-                visibility: visible;
 
                 background: #000;
-            }
-            .comb * {
-                visibility: visible;
             }
             :host([menu-style="mushroom"]) .comb {
                 background: var(--ha-card-background, var(--pat97-honeycomb-menu-control-background));
@@ -232,7 +226,9 @@ class Pat97HoneycombMenuItem extends LitElement
 
             this.config.styles.card.push({
                 height: '100%',
-                position: 'fixed',
+                // The polygon has no transformed containing block. A fixed
+                // card would escape to the viewport instead of filling its cell.
+                position: 'relative',
                 padding: '0'
             });
         }

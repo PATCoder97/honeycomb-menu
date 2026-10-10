@@ -82,7 +82,7 @@ autoclose | `true \| false` | `true` | Close the menu if a button is pressed
 audio | `any:url_path` | `null` | Point to a audio file that will play when a button has been tapped
 xy_pad | [XYPad](#xypad-options) | `null` | This will allow the adding of a xy pin in the middle of the honeycombs which can execute a service based on the x or y value
 size | `int:px` | `225` | The size in px of the honeycomb menu. Each button item grows with the size
-spacing | `int:px` | `2` | This will assign the padding in px for each honeycomb item
+spacing | `number:px` | `2` | Padding per item. The perpendicular gap between neighboring regular hexagon edges is `2 × spacing` in all six directions.
 variables | `object` | `null` | Variables can be accessed through parent templates and templating code via `variables.foo` with `foo` being the variable name. See [Example](#example-using-variables)
 animation_speed | `int:ms` | `100` | Change the speed of the animation to show the menu, each ms is addition to each button... so 50ms * 5 = 250ms total time (first button is immediate)
 animation_mode | `legacy \| sequential \| paired` | `legacy` | `legacy` preserves the original timing. `sequential` opens clockwise and `paired` animates opposite buttons together.
@@ -117,7 +117,7 @@ Any other options for `Button:type` | - | - | -
 
 ## Extended layout example
 
-All new interaction features are opt-in. A configuration with six buttons and no new options renders exactly like earlier PAT97 releases.
+All new interaction features are opt-in. The original six slot assignments are preserved. Shapes use regular hexagons with a height/width ratio of `2 / sqrt(3)` and one row step of `sqrt(3) / 2`. Opening, hover, press and drag highlighting preserve item sizes so they do not change the gaps; closing retains its zoom animation. Browser layout rounding and edge anti-aliasing can still affect individual pixels.
 
 ```yaml
 action: fire-dom-event
