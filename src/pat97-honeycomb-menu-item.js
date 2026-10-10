@@ -116,19 +116,15 @@ class Pat97HoneycombMenuItem extends LitElement
                 --ha-card-background: var(--ha-card-active-background);
                 --paper-item-icon-color: var(--paper-item-icon-active-color);
             }
-            .honeycomb {
-                width: 100%;
-                height: var(--hexagon-height);
-                overflow: hidden;
-                clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
-            }
             .honey {
                 list-style-type: none;
                 position: relative;
-                display: block;
+                display: inline-block;
                 width: 100%;
-                height: 100%;
+                padding: 0 0 114.76% 0;
+                transform: rotate(-60deg) skewY(30deg);
                 overflow: hidden;
+                visibility: hidden;
                 z-index:100;
             }
             .comb {
@@ -137,9 +133,14 @@ class Pat97HoneycombMenuItem extends LitElement
                 left: 0;
                 width: 100%;
                 height: 100%;
+                transform: skewY(-30deg) rotate(60deg);
                 overflow: hidden;
+                visibility: visible;
 
                 background: #000;
+            }
+            .comb * {
+                visibility: visible;
             }
             :host([menu-style="mushroom"]) .comb {
                 background: var(--ha-card-background, var(--pat97-honeycomb-menu-control-background));
@@ -174,11 +175,9 @@ class Pat97HoneycombMenuItem extends LitElement
     render()
     {
         return html`
-            <div class="honeycomb">
-                <div class="honey">
-                    <div class="comb">
-                        <div id="item"></div>
-                    </div>
+            <div class="honey">
+                <div class="comb">
+                    <div id="item"></div>
                 </div>
             </div>`;
     }

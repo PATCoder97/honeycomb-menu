@@ -31,17 +31,14 @@ test('classic layouts preserve all six original slots and dimensions', () => {
     assert.deepEqual(layout.rings, { inner: true, outer: false });
     assert.deepEqual(layout.buttons.map(button => button.id), [1, 2, 3, 4, 5, 6]);
     approximatelyEqual(buttonPosition(0, layout.rings).y, HEXAGON_ROW_STEP);
-    approximatelyEqual(buttonPosition(5, layout.rings).y, HEXAGON_ROW_STEP * 2);
+    approximatelyEqual(buttonPosition(5, layout.rings).y, 1.725);
     approximatelyEqual(centerPosition(layout.rings).y, HEXAGON_ROW_STEP);
 
     const metrics = containerMetrics(225, layout.rings, 2);
     assert.equal(metrics.containerWidth, metrics.item * 3);
     approximatelyEqual(metrics.hexagonWidth, metrics.item - 4);
     approximatelyEqual(metrics.hexagonHeight, metrics.hexagonWidth * HEXAGON_HEIGHT_RATIO);
-    approximatelyEqual(
-        metrics.containerHeight,
-        (metrics.item * HEXAGON_ROW_STEP * 2) + metrics.hexagonHeight + 4
-    );
+    approximatelyEqual(metrics.containerHeight, metrics.item * 2.9);
 });
 
 test('the outer ring activates only after the sixth automatic button', () => {
@@ -53,21 +50,23 @@ test('the outer ring activates only after the sixth automatic button', () => {
     assert.equal(seven.buttons.length, 18);
     assert.deepEqual(seven.buttons.slice(0, 7).map(button => button.id), [1, 2, 3, 4, 5, 6, 7]);
     assert.ok(seven.buttons.slice(7).every(button => Object.keys(button).length === 0));
-    approximatelyEqual(buttonPosition(6, seven.rings).y, HEXAGON_ROW_STEP * 2);
-    approximatelyEqual(centerPosition(seven.rings).y, HEXAGON_ROW_STEP * 2);
+    approximatelyEqual(buttonPosition(6, seven.rings).y, 1.725);
+    approximatelyEqual(centerPosition(seven.rings).y, 1.725);
 });
 
-test('regular hexagon rows use one exact step throughout both rings', () => {
+test('both rings preserve the original optically compensated row rhythm', () => {
     const layout = assignButtons(entries(18));
     const topRows = [8, 7, 6, 13, 16].map(slot => buttonPosition(slot, layout.rings).y);
 
-    for( let index = 1; index < topRows.length; index++ )
-        approximatelyEqual(topRows[index] - topRows[index - 1], HEXAGON_ROW_STEP);
-
-    approximatelyEqual(HEXAGON_HEIGHT_RATIO * 0.75, HEXAGON_ROW_STEP);
+    [0, 0.865, 1.725, 2.585, 3.445].forEach((expected, index) =>
+        approximatelyEqual(topRows[index], expected)
+    );
+    approximatelyEqual(topRows[1] - topRows[0], HEXAGON_ROW_STEP);
+    approximatelyEqual(topRows[2] - topRows[1], 0.86);
+    approximatelyEqual(HEXAGON_HEIGHT_RATIO, 1.1476);
 });
 
-test('hexagon edges and gaps stay regular across menu sizes and spacing values', () => {
+test('upstream hexagon proportions and horizontal gaps stay stable across sizes', () => {
     const layout = assignButtons(entries(18));
 
     for( const size of [160, 225, 320] )
@@ -75,38 +74,13 @@ test('hexagon edges and gaps stay regular across menu sizes and spacing values',
         for( const spacing of [0, 1, 2, 5] )
         {
             const metrics = containerMetrics(size, layout.rings, spacing);
-            const slopedEdge = Math.hypot(
-                metrics.hexagonWidth / 2,
-                metrics.hexagonHeight / 4
-            );
+            const left = buttonPosition(8, layout.rings);
+            const right = buttonPosition(9, layout.rings);
 
-            approximatelyEqual(slopedEdge, metrics.hexagonHeight / 2);
+            approximatelyEqual(right.x - left.x, 1);
             approximatelyEqual(metrics.item - metrics.hexagonWidth, spacing * 2);
-
-            const centers = [
-                ...Array.from({ length: 18 }, (_, slot) => buttonPosition(slot, layout.rings)),
-                centerPosition(layout.rings)
-            ].map(position => ({
-                x: position.x * metrics.item + metrics.spacing + metrics.hexagonWidth / 2,
-                y: position.y * metrics.item + metrics.spacing + metrics.hexagonHeight / 2
-            }));
-
-            for( let first = 0; first < centers.length; first++ )
-            {
-                for( let second = first + 1; second < centers.length; second++ )
-                {
-                    const distance = Math.hypot(
-                        centers[first].x - centers[second].x,
-                        centers[first].y - centers[second].y
-                    );
-
-                    if( distance < metrics.item * 1.01 )
-                    {
-                        approximatelyEqual(distance, metrics.item, 1e-10);
-                        approximatelyEqual(distance - metrics.hexagonWidth, spacing * 2, 1e-10);
-                    }
-                }
-            }
+            approximatelyEqual(metrics.hexagonHeight, metrics.hexagonWidth * 1.1476);
+            approximatelyEqual(metrics.containerHeight, metrics.item * 4.62);
         }
     }
 });

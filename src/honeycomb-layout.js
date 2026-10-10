@@ -1,30 +1,50 @@
 const INNER_SLOTS = [0, 1, 2, 3, 4, 5];
 const OUTER_SLOTS = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
-const HEXAGON_HEIGHT_RATIO = 2 / Math.sqrt(3);
-const HEXAGON_ROW_STEP = Math.sqrt(3) / 2;
+// Preserve the original component's optical proportions. The slightly flattened
+// hexagon and alternating row steps rasterize more evenly than a mathematically
+// exact polygon at small CSS-pixel spacing values.
+const HEXAGON_HEIGHT_RATIO = 1.1476;
+const HEXAGON_ROW_STEP = 0.865;
+const HEXAGON_NEXT_ROW_STEP = 0.86;
+const HEXAGON_ROWS = [
+    0,
+    HEXAGON_ROW_STEP,
+    HEXAGON_ROW_STEP + HEXAGON_NEXT_ROW_STEP,
+    HEXAGON_ROW_STEP + (HEXAGON_NEXT_ROW_STEP * 2),
+    HEXAGON_ROW_STEP + (HEXAGON_NEXT_ROW_STEP * 3)
+];
 
 const INNER_POSITIONS = [
-    { x: 0, y: HEXAGON_ROW_STEP },
+    { x: 0, y: HEXAGON_ROWS[1] },
     { x: 0.5, y: 0 },
     { x: 1.5, y: 0 },
-    { x: 2, y: HEXAGON_ROW_STEP },
-    { x: 1.5, y: HEXAGON_ROW_STEP * 2 },
-    { x: 0.5, y: HEXAGON_ROW_STEP * 2 }
+    { x: 2, y: HEXAGON_ROWS[1] },
+    { x: 1.5, y: HEXAGON_ROWS[2] },
+    { x: 0.5, y: HEXAGON_ROWS[2] }
+];
+
+const INNER_POSITIONS_WITH_OUTER_RING = [
+    { x: 1, y: HEXAGON_ROWS[2] },
+    { x: 1.5, y: HEXAGON_ROWS[1] },
+    { x: 2.5, y: HEXAGON_ROWS[1] },
+    { x: 3, y: HEXAGON_ROWS[2] },
+    { x: 2.5, y: HEXAGON_ROWS[3] },
+    { x: 1.5, y: HEXAGON_ROWS[3] }
 ];
 
 const OUTER_POSITIONS = [
-    { x: -1, y: HEXAGON_ROW_STEP },
-    { x: -0.5, y: 0 },
-    { x: 0, y: -HEXAGON_ROW_STEP },
-    { x: 1, y: -HEXAGON_ROW_STEP },
-    { x: 2, y: -HEXAGON_ROW_STEP },
-    { x: 2.5, y: 0 },
-    { x: 3, y: HEXAGON_ROW_STEP },
-    { x: 2.5, y: HEXAGON_ROW_STEP * 2 },
-    { x: 2, y: HEXAGON_ROW_STEP * 3 },
-    { x: 1, y: HEXAGON_ROW_STEP * 3 },
-    { x: 0, y: HEXAGON_ROW_STEP * 3 },
-    { x: -0.5, y: HEXAGON_ROW_STEP * 2 }
+    { x: 0, y: HEXAGON_ROWS[2] },
+    { x: 0.5, y: HEXAGON_ROWS[1] },
+    { x: 1, y: HEXAGON_ROWS[0] },
+    { x: 2, y: HEXAGON_ROWS[0] },
+    { x: 3, y: HEXAGON_ROWS[0] },
+    { x: 3.5, y: HEXAGON_ROWS[1] },
+    { x: 4, y: HEXAGON_ROWS[2] },
+    { x: 3.5, y: HEXAGON_ROWS[3] },
+    { x: 3, y: HEXAGON_ROWS[4] },
+    { x: 2, y: HEXAGON_ROWS[4] },
+    { x: 1, y: HEXAGON_ROWS[4] },
+    { x: 0.5, y: HEXAGON_ROWS[3] }
 ];
 
 function validInteger(value, min, max)
@@ -147,34 +167,27 @@ function assignButtons(entries, emptySlots = 'visible')
 
 function buttonPosition(slot, rings)
 {
-    let position;
-
     if( slot < 6 )
     {
         if( ! rings.inner )
             return null;
-        position = INNER_POSITIONS[slot];
-    }
-    else
-    {
-        if( ! rings.outer )
-            return null;
-        position = OUTER_POSITIONS[slot - 6];
+
+        return rings.outer
+            ? { ...INNER_POSITIONS_WITH_OUTER_RING[slot] }
+            : { ...INNER_POSITIONS[slot] };
     }
 
-    if( ! position )
+    if( ! rings.outer || ! OUTER_POSITIONS[slot - 6] )
         return null;
 
-    return rings.outer
-        ? { x: position.x + 1, y: position.y + HEXAGON_ROW_STEP }
-        : { ...position };
+    return { ...OUTER_POSITIONS[slot - 6] };
 }
 
 function centerPosition(rings)
 {
     return rings.outer
-        ? { x: 2, y: HEXAGON_ROW_STEP * 2 }
-        : { x: 1, y: HEXAGON_ROW_STEP };
+        ? { x: 2, y: HEXAGON_ROWS[2] }
+        : { x: 1, y: HEXAGON_ROWS[1] };
 }
 
 function containerMetrics(size, rings, spacing = 0)
@@ -186,7 +199,6 @@ function containerMetrics(size, rings, spacing = 0)
         : 0;
     const hexagonWidth = item - (safeSpacing * 2);
     const hexagonHeight = hexagonWidth * HEXAGON_HEIGHT_RATIO;
-    const rowCount = rings.outer ? 4 : 2;
 
     return {
         item,
@@ -194,8 +206,7 @@ function containerMetrics(size, rings, spacing = 0)
         hexagonWidth,
         hexagonHeight,
         containerWidth: item * (rings.outer ? 5 : 3),
-        containerHeight: (item * HEXAGON_ROW_STEP * rowCount) +
-            hexagonHeight + (safeSpacing * 2)
+        containerHeight: item * (rings.outer ? 4.62 : 2.9)
     };
 }
 

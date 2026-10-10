@@ -238,7 +238,7 @@ test('extended render supports seven visible slots, center button, defaults and 
     assert.equal(menu.isConnected, false);
 });
 
-test('center close uses the selected animation and cards keep an outer hexagon mask', async () => {
+test('center close uses the selected animation and cards keep the upstream hexagon transform', async () => {
     const menu = await renderMenu({
         entity: 'light.room',
         buttons: [button(0)],
@@ -256,15 +256,19 @@ test('center close uses the selected animation and cards keep an outer hexagon m
     assert.equal(center.hasAttribute('selected'), true);
     assert.match(
         browser.customElements.get('pat97-honeycomb-menu-item').styles.cssText,
-        /clip-path:\s*polygon\(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%\)/
+        /transform:\s*rotate\(-60deg\) skewY\(30deg\)/
     );
     assert.match(
         browser.customElements.get('pat97-honeycomb-menu-item').styles.cssText,
-        /height:\s*var\(--hexagon-height\)/
+        /transform:\s*skewY\(-30deg\) rotate\(60deg\)/
     );
-    assert.doesNotMatch(
+    assert.match(
         browser.customElements.get('pat97-honeycomb-menu-item').styles.cssText,
-        /skewY\(|rotate\(-?60deg\)/
+        /padding:\s*0 0 114\.76% 0/
+    );
+    assert.match(
+        browser.customElements.get('pat97-honeycomb-menu-item').styles.cssText,
+        /\.comb\s*\{[\s\S]*visibility:\s*visible/
     );
 
     const menuStyles = browser.customElements.get('pat97-honeycomb-menu').styles.cssText;
