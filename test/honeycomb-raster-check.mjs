@@ -58,33 +58,15 @@ try {
         report.push({count,emptySlots,dpr,geometry,file});
       }
     }
-    await page.evaluate(() => window.renderMenu('pat97-honeycomb-menu', {size:260,spacing:1,count:18,center:true}));
+    // Real opening animation, then upstream-style hover on center/ring cells.
+    await page.evaluate(() => renderMenu('pat97-honeycomb-menu', {size:260,spacing:1,count:18,center:true,animations:true,animationMode:'paired'}));
     const center = page.locator('pat97-honeycomb-menu-item.center-item');
-    const restGeometry = await page.evaluate(() => measureGeometry());
-    const restRect = await center.boundingBox();
-    await center.hover();
-    assert.match(await center.evaluate(element => getComputedStyle(element).transform), /matrix(?:3d)?\(1\.04,/);
-    assert.ok(Math.abs((await center.boundingBox()).width/restRect.width-1.04) < 0.0001);
-    await page.mouse.down();
-    assert.match(await center.evaluate(element => getComputedStyle(element).transform), /matrix(?:3d)?\(0\.96,/);
-    await page.mouse.up();
-    await center.evaluate(element => element.classList.add('drag-hover'));
-    assert.match(await center.evaluate(element => getComputedStyle(element).transform), /matrix(?:3d)?\(1\.08,/);
-    await center.evaluate(element => element.classList.remove('drag-hover'));
-    await page.mouse.move(900,700);
-    assert.equal(await center.evaluate(element => getComputedStyle(element).transform), 'none');
-    checkGeometry(await page.evaluate(() => measureGeometry()), 42);
-    assert.deepEqual(await page.evaluate(() => measureGeometry()), restGeometry);
-    // Exercise real opening animations too: zoom must release its transform
-    // at completion, otherwise animation fill can suppress later hover effects.
-    await page.evaluate(() => window.renderMenu('pat97-honeycomb-menu', {size:260,spacing:1,count:18,center:true,animations:true,animationMode:'paired'}));
     const opening = await page.evaluate(async () => {
-      const animations = testMenu.shadowRoot.querySelector('.center-item').getAnimations();
-      const zoom = animations.find(animation => animation.animationName === 'zoomIn');
+      const item = testMenu.shadowRoot.querySelector('.center-item');
+      const zoom = item.getAnimations().find(animation => animation.animationName === 'zoomIn');
       if(!zoom) throw new Error('Opening zoom missing');
-      zoom.pause();
-      zoom.currentTime = 0;
-      const initial = getComputedStyle(testMenu.shadowRoot.querySelector('.center-item')).transform;
+      zoom.pause(); zoom.currentTime=0;
+      const initial = getComputedStyle(item).transform;
       const all = [...new Set([...testMenu.shadowRoot.querySelectorAll('*')].flatMap(element => element.getAnimations()))];
       all.forEach(animation => animation.finish());
       await Promise.all(all.map(animation => animation.finished));
@@ -92,147 +74,54 @@ try {
       return initial;
     });
     assert.match(opening, /matrix(?:3d)?\(0\.3,/);
-    await page.waitForFunction(() => [...testMenu.shadowRoot.querySelectorAll('pat97-honeycomb-menu-item')].every(item => getComputedStyle(item).transform === 'none'));
-    checkGeometry(await page.evaluate(() => measureGeometry()), 42);
-    assert.equal(await center.evaluate(element => getComputedStyle(element).transform), 'none');
-    await center.hover();
-    await page.waitForFunction(() => Math.abs(new DOMMatrixReadOnly(getComputedStyle(testMenu.shadowRoot.querySelector('.center-item')).transform).a - 1.04) < 0.00001);
-    await page.mouse.move(900,700);
-    await page.waitForFunction(() => getComputedStyle(testMenu.shadowRoot.querySelector('.center-item')).transform === 'none');
-    checkGeometry(await page.evaluate(() => measureGeometry()), 42);
-    // Bounds cannot detect compositor-induced seams. Compare the actual edge
-    // pixels against an unpromoted polygon, masking only the icon interiors.
-    const edgeShotOptions = {
-      clip: { x:10, y:10, width:500, height:500 },
-      mask: [page.locator('pat97-honeycomb-menu-item ha-state-icon, pat97-honeycomb-menu-item ha-icon')]
-    };
+    const restGeometry = await page.evaluate(() => measureGeometry());
+    checkGeometry(restGeometry,42);
+    // Upstream does not transform on hover/press. Inspect the actual glyph
+    // pixels, with no allowed centroid drift; HA icons here are still stubs.
+    const items = page.locator('pat97-honeycomb-menu-item');
+    for(const index of [0,1,3,6,12,18]) {
+      await page.mouse.move(900,700);
+      const item = items.nth(index);
+      const rest = await item.boundingBox();
+      const clip = {x:Math.floor(rest.x+rest.width/2-20),y:Math.floor(rest.y+rest.height/2-20),width:40,height:40};
+      const glyphReference = await page.screenshot({clip});
+      await item.hover();
+      for(const delay of [0,17,65,220]) {
+        if(delay) await page.waitForTimeout(delay);
+        assert.deepEqual(await item.boundingBox(),rest,'Hover changed cell bounds');
+        assert.ok(glyphReference.equals(await page.screenshot({clip})), `Hover changed glyph pixels: slot=${index}, delay=${delay}`);
+      }
+      await page.mouse.down();
+      assert.deepEqual(await item.boundingBox(),rest,'Press changed cell bounds');
+      await page.mouse.move(900,700); await page.mouse.up();
+      assert.ok(glyphReference.equals(await page.screenshot({clip})), 'Hover exit changed glyph pixels');
+    }
+    assert.deepEqual(await page.evaluate(() => measureGeometry()),restGeometry);
+    // Preserve opt-in drag brightness without zooming the cell or glyph.
+    const centerRest = await center.boundingBox();
+    await center.evaluate(element => element.classList.add('drag-hover'));
+    assert.deepEqual(await center.boundingBox(),centerRest);
+    await center.evaluate(element => element.classList.remove('drag-hover'));
+    const edgeOptions = {clip:{x:10,y:10,width:500,height:500},mask:[page.locator('pat97-honeycomb-menu-item ha-state-icon, pat97-honeycomb-menu-item ha-icon')]};
+    const edgeReference = await page.screenshot({...edgeOptions,path:`${output}/upstream-motion-rest-dpr${dpr}.png`});
     await page.evaluate(() => {
-      const style = document.createElement('style');
-      style.id = 'edge-raster-reference';
-      style.textContent = 'pat97-honeycomb-menu-item { will-change: auto !important; backface-visibility: visible !important; }';
+      const style=document.createElement('style'); style.id='edge-reference';
+      style.textContent='pat97-honeycomb-menu-item {will-change:auto!important;backface-visibility:visible!important}';
       testMenu.shadowRoot.append(style);
     });
-    const edgeReference = await page.screenshot({ ...edgeShotOptions, path:`${output}/edge-reference-dpr${dpr}.png` });
-    await page.evaluate(() => testMenu.shadowRoot.querySelector('#edge-raster-reference').remove());
-    assert.ok(edgeReference.equals(await page.screenshot(edgeShotOptions)), 'Resting edge pixels differ from unpromoted polygons');
-    // The 0.16.8 layer promotion regression must be detected, even though its
-    // measured geometry was identical. DPR 1 exposes these thin seams clearly.
-    if(dpr === 1) {
-      await page.evaluate(() => {
-        const style = document.createElement('style');
-        style.id = 'edge-raster-negative';
-        style.textContent = 'pat97-honeycomb-menu-item { will-change: transform, filter !important; backface-visibility: hidden !important; }';
-        testMenu.shadowRoot.append(style);
-      });
-      assert.ok(!edgeReference.equals(await page.screenshot({ ...edgeShotOptions, path:`${output}/edge-layer-regression-dpr${dpr}.png` })), 'Pixel check missed the polygon layer regression');
-      await page.evaluate(() => testMenu.shadowRoot.querySelector('#edge-raster-negative').remove());
-    }
-    // Sample live frames, including reversing before the zoom has completed
-    // and crossing into a neighboring cell. Endpoint-only tests miss snapping.
+    assert.ok(edgeReference.equals(await page.screenshot(edgeOptions)), 'Resting polygon has forced layer rasterization');
+    await page.evaluate(() => testMenu.shadowRoot.querySelector('#edge-reference').remove());
+    // Negative control: old module hover scale must be rejected.
     await page.evaluate(() => {
-      window.motionFrames = [];
-      window.captureMotion = true;
-      const cells = [...testMenu.shadowRoot.querySelectorAll('pat97-honeycomb-menu-item')];
-      const sample = time => {
-        motionFrames.push({ time, cells: cells.map(item => {
-          const shape = item.shadowRoot.querySelector('.honey').getBoundingClientRect();
-          const icon = item.shadowRoot.querySelector('button-card')?.shadowRoot.querySelector('ha-state-icon, ha-icon')?.getBoundingClientRect();
-          return {
-            scale: new DOMMatrixReadOnly(getComputedStyle(item).transform).a,
-            offset: icon ? Math.hypot(icon.x+icon.width/2-shape.x-shape.width/2, icon.y+icon.height/2-shape.y-shape.height/2) : 0
-          };
-        }) });
-        if(captureMotion) requestAnimationFrame(sample);
-      };
-      requestAnimationFrame(sample);
+      const style=document.createElement('style'); style.id='hover-negative';
+      style.textContent='pat97-honeycomb-menu-item:hover {transform:scale(1.04)!important}';
+      testMenu.shadowRoot.append(style);
     });
-    const centerBox = await center.boundingBox();
-    await page.mouse.move(centerBox.x+centerBox.width/2, centerBox.y+centerBox.height/2);
-    await page.waitForTimeout(280);
+    await center.hover();
+    assert.notDeepEqual(await center.boundingBox(),centerRest,'Verifier missed the old hover scale');
     await page.mouse.move(900,700);
-    await page.waitForTimeout(70);
-    await page.mouse.move(centerBox.x+centerBox.width/2, centerBox.y+centerBox.height/2);
-    await page.waitForTimeout(70);
-    const neighbor = await page.locator('pat97-honeycomb-menu-item[data-honeycomb-slot="0"]').boundingBox();
-    await page.mouse.move(neighbor.x+neighbor.width/2, neighbor.y+neighbor.height/2);
-    await page.waitForTimeout(280);
-    await page.mouse.move(900,700);
-    await page.waitForTimeout(280);
-    const motion = await page.evaluate(() => { captureMotion = false; return motionFrames; });
-    assert.ok(motion.length > 10, 'Capture intermediate hover frames');
-    const intermediateScales = new Set();
-    for(const [index, frame] of motion.entries()) {
-      for(const [cellIndex, cell] of frame.cells.entries()) {
-        assert.ok(cell.offset < tolerance, `Icon moved off center: ${cell.offset}`);
-        assert.ok(cell.scale >= 0.99999 && cell.scale <= 1.04001, 'Hover must not overshoot');
-        if(cell.scale > 1.001 && cell.scale < 1.039) intermediateScales.add(cell.scale.toFixed(4));
-        if(index && frame.time-motion[index-1].time <= 20)
-          assert.ok(Math.abs(cell.scale-motion[index-1].cells[cellIndex].scale) < 0.012, 'Hover snapped between consecutive frames');
-      }
-    }
-    assert.ok(intermediateScales.size >= 3, 'Zoom must interpolate, not jump between endpoints');
-    checkGeometry(await page.evaluate(() => measureGeometry()), 42);
-    assert.ok(edgeReference.equals(await page.screenshot({ ...edgeShotOptions, path:`${output}/edge-after-hover-dpr${dpr}.png` })), 'Hover left different resting edge pixels');
-    // Inspect the asymmetric SVG's pixels too, not just its host rectangle.
-    // Freeze both transitions at the same timestamps for reproducible frames.
-    const glyphRest = await center.evaluate(item => {
-      const icon = item.shadowRoot.querySelector('button-card').shadowRoot.querySelector('ha-state-icon, ha-icon');
-      const rect = icon.getBoundingClientRect();
-      return { x:rect.x+rect.width/2, y:rect.y+rect.height/2, width:rect.width };
-    });
-    await page.mouse.move(glyphRest.x,glyphRest.y);
-    await center.evaluate(item => {
-      const icon = item.shadowRoot.querySelector('button-card').shadowRoot.querySelector('ha-state-icon, ha-icon');
-      for(const animation of [...item.getAnimations(), ...icon.getAnimations()]) { animation.pause(); animation.currentTime = 0; }
-    });
-    const glyphFrames = [];
-    const clip = { x:Math.floor(glyphRest.x-23), y:Math.floor(glyphRest.y-23), width:46, height:46 };
-    for(const time of [0,16,32,48,64,80,100,140,180,220]) {
-      const rect = await center.evaluate((item,time) => {
-        const icon = item.shadowRoot.querySelector('button-card').shadowRoot.querySelector('ha-state-icon, ha-icon');
-        for(const animation of [...item.getAnimations(), ...icon.getAnimations()]) animation.currentTime = time;
-        const rect = icon.getBoundingClientRect();
-        return { x:rect.x+rect.width/2, y:rect.y+rect.height/2, width:rect.width };
-      },time);
-      assert.ok(Math.abs(rect.width-glyphRest.width) < 0.02, 'Hover changed glyph size');
-      assert.ok(Math.hypot(rect.x-glyphRest.x,rect.y-glyphRest.y) < 0.02, 'Hover translated the glyph');
-      const png = await page.screenshot({ clip, path:`${output}/glyph-${time}-dpr${dpr}.png` });
-      const centroid = await page.evaluate(async base64 => {
-        const image = new Image(); image.src = 'data:image/png;base64,'+base64; await image.decode();
-        const canvas = document.createElement('canvas'); canvas.width = image.width; canvas.height = image.height;
-        const ctx = canvas.getContext('2d'); ctx.drawImage(image,0,0);
-        const pixels = ctx.getImageData(0,0,canvas.width,canvas.height).data;
-        let mass=0,x=0,y=0;
-        for(let row=0;row<canvas.height;row++) for(let col=0;col<canvas.width;col++) {
-          const weight = (255-pixels[(row*canvas.width+col)*4])/255;
-          mass += weight; x += (col+0.5)*weight; y += (row+0.5)*weight;
-        }
-        return { x:x/mass, y:y/mass };
-      },png.toString('base64'));
-      glyphFrames.push({ time, x:centroid.x/dpr, y:centroid.y/dpr });
-    }
-    // Subpixel antialiasing/brightness can change mass slightly; reject visible
-    // pixel jumps while retaining these frame images for visual inspection.
-    for(const axis of ['x','y'])
-      assert.ok(Math.max(...glyphFrames.map(f=>f[axis]))-Math.min(...glyphFrames.map(f=>f[axis])) < 0.25, `Glyph raster shifted on ${axis}`);
-    await writeFile(`${output}/glyph-motion-dpr${dpr}.json`,JSON.stringify(glyphFrames,null,2));
-    // Negative control: the old whole-icon zoom must fail the size invariant.
-    await center.evaluate(item => {
-      const icon=item.shadowRoot.querySelector('button-card').shadowRoot.querySelector('ha-state-icon, ha-icon');
-      icon.style.setProperty('scale','1','important'); icon.style.setProperty('transition','none','important');
-    });
-    assert.ok(await center.evaluate((item,width) => {
-      const icon=item.shadowRoot.querySelector('button-card').shadowRoot.querySelector('ha-state-icon, ha-icon');
-      return Math.abs(icon.getBoundingClientRect().width-width) > 1;
-    },glyphRest.width), 'Glyph test missed the old icon zoom');
-    await center.evaluate(item => {
-      const icon=item.shadowRoot.querySelector('button-card').shadowRoot.querySelector('ha-state-icon, ha-icon');
-      icon.style.removeProperty('scale'); icon.style.removeProperty('transition');
-      for(const animation of [...item.getAnimations(), ...icon.getAnimations()]) animation.finish();
-    });
-    await page.mouse.move(900,700);
-    await page.waitForTimeout(300);
-    assert.ok(edgeReference.equals(await page.screenshot(edgeShotOptions)), 'Glyph stabilization changed resting edge pixels');
+    await page.evaluate(() => testMenu.shadowRoot.querySelector('#hover-negative').remove());
+    assert.ok(edgeReference.equals(await page.screenshot(edgeOptions)), 'Hover left changed edge pixels');
     // Negative controls: the verifier must reject the two previous regressions.
     await page.evaluate(() => {
       for( const item of testMenu.shadowRoot.querySelectorAll('pat97-honeycomb-menu-item') ) {
@@ -250,9 +139,34 @@ try {
     });
     const shifted = await page.evaluate(() => measureGeometry());
     assert.throws(() => checkGeometry(shifted), /Unequal/);
+    // Verify upstream close animations on real CSS animations, not selectors.
+    for(const selected of [false,true]) {
+      await page.evaluate(() => renderMenu('pat97-honeycomb-menu', {size:260,spacing:1,count:6,center:true,animations:true}));
+      const closing = await page.evaluate(async selected => {
+        const all=[...new Set([...testMenu.shadowRoot.querySelectorAll('*')].flatMap(element=>element.getAnimations()))];
+        all.forEach(animation=>animation.finish());
+        await Promise.all(all.map(animation=>animation.finished));
+        const item=testMenu.shadowRoot.querySelector('.center-item');
+        testMenu.close(selected ? item : null);
+        await testMenu.updateComplete;
+        const animations=[...new Set([...testMenu.shadowRoot.querySelectorAll('*')].flatMap(element=>element.getAnimations()))];
+        animations.forEach(animation=>animation.pause());
+        const name=selected ? 'bounceOut' : 'zoomOut';
+        const zoom=item.getAnimations().find(animation=>animation.animationName===name);
+        if(!zoom) throw new Error(`Missing closing animation: ${name}`);
+        const duration=zoom.effect.getTiming().duration;
+        zoom.currentTime=duration/2;
+        const style=getComputedStyle(item);
+        return {name,duration,scale:new DOMMatrixReadOnly(style.transform).a,opacity:Number(style.opacity),pointerEvents:style.pointerEvents};
+      },selected);
+      assert.equal(closing.duration,selected ? 750 : 500);
+      assert.ok(Math.abs(closing.scale-(selected ? 1.1 : 0.3)) < 0.00001);
+      assert.equal(closing.opacity,selected ? 1 : 0);
+      assert.equal(closing.pointerEvents,'none');
+    }
     assert.deepEqual(errors, [], 'No browser JavaScript errors');
     await context.close();
   }
   await writeFile(`${output}/report.json`, JSON.stringify(report,null,2));
-  console.log(`PASS: ${report.length} actual renders; six edges and neighbor gaps within ${tolerance} CSS px; hover/press/drag-hover, stable glyph bounds/pixels, resting edge pixel parity and negative controls at DPR 1/2. Report: ${output}`);
+  console.log(`PASS: ${report.length} renders; regular geometry within ${tolerance} CSS px; opening/closing zoom and bounce, unchanged hover glyph pixels and negative controls at DPR 1/2. HA icons remain test stubs. Report: ${output}`);
 } finally { await browser.close(); }

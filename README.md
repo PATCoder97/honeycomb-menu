@@ -117,7 +117,7 @@ Any other options for `Button:type` | - | - | -
 
 ## Extended layout example
 
-All new interaction features are opt-in. The original six slot assignments are preserved. Shapes use regular hexagons with a height/width ratio of `2 / sqrt(3)` and one row step of `sqrt(3) / 2`. At rest, every perpendicular neighbor gap is `2 × spacing`. Opening/closing, hover, press and drag highlighting zoom the hexagon shell: gaps change temporarily during the effect and return to their original values afterward. Button-card icons counter-scale during hover, press and drag highlighting to keep their glyph size stable; opening/closing still zooms the entire button. Browser layout rounding and edge anti-aliasing can still affect individual pixels.
+All new interaction features are opt-in. The original six slot assignments are preserved. Shapes use regular hexagons with a height/width ratio of `2 / sqrt(3)` and one row step of `sqrt(3) / 2`. Every perpendicular neighbor gap is `2 × spacing` after the opening animation. Motion follows the upstream module: 500 ms opening/closing zoom and 750 ms bounce for the selected closing button. The module does not scale or brighten cells on ordinary hover/press, inject icon styles, or counter-scale icons; the underlying card retains its own interaction feedback. Opt-in drag highlighting only brightens the selected cell without changing its geometry. Browser layout rounding and edge anti-aliasing can still affect individual pixels.
 
 ```yaml
 action: fire-dom-event

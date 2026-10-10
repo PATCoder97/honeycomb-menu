@@ -227,8 +227,7 @@ test('extended render supports seven visible slots, center button, defaults and 
     assert.equal(menu.style.getPropertyValue('--spacing'), `${menu.sizes.spacing}px`);
 
     const wrappedCard = ringItems[0].shadowRoot.querySelector('#item > *');
-    assert.equal(wrappedCard.config.styles.icon[0].scale, 'var(--pat97-honeycomb-icon-scale, 1)');
-    assert.equal(wrappedCard.config.styles.icon[0].transition, 'scale 220ms cubic-bezier(0.2, 0, 0.2, 1)');
+    assert.equal(wrappedCard.config.styles.icon.length, 1);
     assert.equal(wrappedCard.config.styles.icon.at(-1).transform, 'rotate(20deg)');
     const actionTarget = wrappedCard.shadowRoot.querySelector('ha-card');
     let action;
@@ -275,13 +274,14 @@ test('center close uses the selected animation and cards keep a regular hexagon 
     );
 
     const menuStyles = browser.customElements.get('pat97-honeycomb-menu').styles.cssText;
-    assert.match(menuStyles, /@media\s*\(hover:\s*hover\)\s*and\s*\(pointer:\s*fine\)/);
-    assert.match(menuStyles, /:not\(\.drag-hover\):not\(\[disabled\]\):hover/);
-    assert.match(menuStyles, /filter:\s*brightness\(1\.08\)/);
+    assert.doesNotMatch(menuStyles, /:hover|:active|--pat97-honeycomb-icon-scale/);
     assert.doesNotMatch(menuStyles, /will-change\s*:/);
     assert.doesNotMatch(menuStyles, /backface-visibility\s*:/);
-    assert.match(menuStyles, /transition:\s*transform 220ms cubic-bezier\(0\.2, 0, 0\.2, 1\),\s*filter 220ms cubic-bezier\(0\.2, 0, 0\.2, 1\)/);
-    assert.match(menuStyles, /scale3d\(1\.04,\s*1\.04,\s*1\.04\)/);
+    assert.doesNotMatch(menuStyles, /transition:\s*transform|scale3d\(1\.04|scale3d\(1\.08/);
+    assert.match(menuStyles, /animation-fill-mode:\s*both/);
+    assert.match(menuStyles, /animation-name:\s*zoomIn/);
+    assert.match(menuStyles, /animation-name:\s*zoomOut/);
+    assert.match(menuStyles, /animation-name:\s*bounceOut/);
 
     center.dispatchEvent(new browser.Event('animationend'));
     assert.equal(menu.isConnected, false);

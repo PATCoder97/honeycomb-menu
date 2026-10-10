@@ -231,16 +231,6 @@ class Pat97HoneycombMenuItem extends LitElement
                 position: 'relative',
                 padding: '0'
             });
-            if( ! Array.isArray(this.config.styles.icon) )
-                this.config.styles.icon = [];
-            // Counter-scale the glyph while the shell zooms. The standalone
-            // scale property preserves user transforms (e.g. rotating fans).
-            // Explicit user icon styles still take precedence.
-            this.config.styles.icon.unshift({
-                scale: 'var(--pat97-honeycomb-icon-scale, 1)',
-                'transform-origin': 'center',
-                transition: 'scale 220ms cubic-bezier(0.2, 0, 0.2, 1)'
-            });
         }
 
         var card = createCard(merge({}, {

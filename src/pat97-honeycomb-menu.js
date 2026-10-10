@@ -209,10 +209,6 @@ class Pat97HoneycombMenu extends LitElement
             50% {
                 opacity: 1;
             }
-            to {
-                opacity: 1;
-                transform: scale3d(1, 1, 1);
-            }
             }
             @keyframes zoomOut {
             from {
@@ -285,35 +281,13 @@ class Pat97HoneycombMenu extends LitElement
                 box-sizing: border-box;
                 width: var(--item-size);
                 padding: var(--spacing);
-                transform-origin: center;
-                /* Do not force the polygon onto a permanent GPU layer:
-                   that changes edge rasterization even at rest. */
-                transition: transform 220ms cubic-bezier(0.2, 0, 0.2, 1), filter 220ms cubic-bezier(0.2, 0, 0.2, 1);
             }
             pat97-honeycomb-menu-item.center-item {
                 z-index: 2;
                 filter: brightness(var(--pat97-honeycomb-center-brightness, 1));
             }
-            @media (hover: hover) and (pointer: fine) {
-                :host(:not([closing])) pat97-honeycomb-menu-item:not(.drag-hover):not([disabled]):hover {
-                    filter: brightness(1.08);
-                    transform: scale3d(1.04, 1.04, 1.04);
-                    --pat97-honeycomb-icon-scale: 0.9615384615384615;
-                    z-index: 3;
-                }
-                :host(:not([closing])) pat97-honeycomb-menu-item.center-item:not(.drag-hover):not([disabled]):hover {
-                    filter: brightness(calc(var(--pat97-honeycomb-center-brightness, 1) * 1.08));
-                }
-            }
-            :host(:not([closing])) pat97-honeycomb-menu-item:not(.drag-hover):not([disabled]):active {
-                filter: brightness(0.96);
-                transform: scale3d(0.96, 0.96, 0.96);
-                --pat97-honeycomb-icon-scale: 1.0416666666666667;
-            }
             pat97-honeycomb-menu-item.drag-hover {
                 filter: brightness(1.18);
-                transform: scale3d(1.08, 1.08, 1.08);
-                --pat97-honeycomb-icon-scale: 0.9259259259259259;
                 z-index: 3;
             }
             pat97-honeycomb-menu-item.center-item.drag-hover {
@@ -321,7 +295,7 @@ class Pat97HoneycombMenu extends LitElement
             }
             pat97-honeycomb-menu-item, pat97-xy-pad {
                 animation-duration: 0.5s;
-                animation-fill-mode: backwards;
+                animation-fill-mode: both;
                 animation-name: zoomIn;
             }
             :host([closing]) pat97-honeycomb-menu-item, :host([closing]) pat97-xy-pad {
