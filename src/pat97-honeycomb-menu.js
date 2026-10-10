@@ -281,10 +281,25 @@ class Pat97HoneycombMenu extends LitElement
                 box-sizing: border-box;
                 width: var(--item-size);
                 padding: var(--spacing);
+                transform-origin: center;
+                transition: transform 160ms ease, filter 160ms ease;
             }
             pat97-honeycomb-menu-item.center-item {
                 z-index: 2;
                 filter: brightness(var(--pat97-honeycomb-center-brightness, 1));
+            }
+            @media (hover: hover) and (pointer: fine) {
+                :host(:not([closing])) pat97-honeycomb-menu-item:not(.drag-hover):not([disabled]):hover {
+                    filter: brightness(1.08);
+                    transform: scale3d(1.04, 1.04, 1.04);
+                    z-index: 3;
+                }
+                :host(:not([closing])) pat97-honeycomb-menu-item.center-item:not(.drag-hover):not([disabled]):hover {
+                    filter: brightness(calc(var(--pat97-honeycomb-center-brightness, 1) * 1.08));
+                }
+            }
+            :host(:not([closing])) pat97-honeycomb-menu-item:not(.drag-hover):not([disabled]):active {
+                transform: scale3d(0.96, 0.96, 0.96);
             }
             pat97-honeycomb-menu-item.drag-hover {
                 filter: brightness(1.18);

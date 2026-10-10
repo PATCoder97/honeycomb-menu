@@ -267,6 +267,12 @@ test('center close uses the selected animation and cards keep an outer hexagon m
         /skewY\(|rotate\(-?60deg\)/
     );
 
+    const menuStyles = browser.customElements.get('pat97-honeycomb-menu').styles.cssText;
+    assert.match(menuStyles, /@media\s*\(hover:\s*hover\)\s*and\s*\(pointer:\s*fine\)/);
+    assert.match(menuStyles, /:not\(\.drag-hover\):not\(\[disabled\]\):hover/);
+    assert.match(menuStyles, /scale3d\(1\.04,\s*1\.04,\s*1\.04\)/);
+    assert.match(menuStyles, /transition:\s*transform 160ms ease,\s*filter 160ms ease/);
+
     center.dispatchEvent(new browser.Event('animationend'));
     assert.equal(menu.isConnected, false);
 });
