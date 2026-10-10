@@ -23,4 +23,4 @@ jobs:
           pat97-honeycomb-menu.js
           --verify-tag
           --generate-notes
-          --title "PAT97 Honeycomb Menu ${GITHUB_REF_NAME}"
+          --title "PAT97 Mushroom Honeycomb Menu ${GITHUB_REF_NAME}"

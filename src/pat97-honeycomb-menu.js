@@ -1,7 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import "./pat97-honeycomb-menu-item.js";
 import "./pat97-xy-pad.js";
-import { objectEvalTemplate, getTemplateOrValue, stringToBool, fireEvent, lovelace_view, provideHass, honeycomb_menu_templates } from "./helpers.js";
+import { objectEvalTemplate, getTemplateOrValue, stringToBool, fireEvent, lovelace_view, provideHass, pat97_honeycomb_menu_templates } from "./helpers.js";
 
 const hass = document.querySelector('home-assistant').hass;
 
@@ -26,7 +26,7 @@ const manager = new function() {
     }.bind(this);
 };
 
-window.honeycomb_menu = (config) => {
+window.pat97_honeycomb_menu = (config) => {
     var honeycombConfig = traverseConfigs( config );
 
     if( honeycombConfig.entity_id && ! honeycombConfig.entity )
@@ -41,9 +41,9 @@ document.addEventListener('mousedown', manager.handleXYPosition, false);
 // document.addEventListener("mousemove", manager.handleXYPosition, false);
 
 document.body.addEventListener("ll-custom", e => {
-    if(e.detail.honeycomb_menu)
+    if(e.detail.pat97_honeycomb_menu)
     {
-        window.honeycomb_menu( e.detail.honeycomb_menu );
+        window.pat97_honeycomb_menu( e.detail.pat97_honeycomb_menu );
     }
 });
 
@@ -90,7 +90,7 @@ function traverseConfigs( _config, _buttons )
     // merge will also affect sub properties
     _config = merge({}, _config );
 
-    const honeycomb_templates = honeycomb_menu_templates();
+    const honeycomb_templates = pat97_honeycomb_menu_templates();
     if( ! _config.template || ! honeycomb_templates || ! honeycomb_templates[_config.template] )
         return Object.assign({}, _config, bindButtons( _config ));
 

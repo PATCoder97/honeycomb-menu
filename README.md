@@ -1,4 +1,4 @@
-# PAT97 Honeycomb Menu for Home Assistant
+# PAT97 Mushroom Honeycomb Menu for Home Assistant
 
 Personal fork of [Honeycomb Menu by @Sian-Lee-SA](https://github.com/Sian-Lee-SA/honeycomb-menu), restyled to match the soft, rounded appearance of Mushroom cards while preserving the original menu behavior and configuration.
 
@@ -32,7 +32,7 @@ The module uses a hierarchy override for honeycomb options and sub options so yo
 
 1. Open HACS, select the three-dot menu, then select **Custom repositories**.
 1. Add `https://github.com/PATCoder97/honeycomb-menu` with category **Dashboard**.
-1. Install **PAT97 Honeycomb Menu** and restart Home Assistant.
+1. Install **PAT97 Mushroom Honeycomb Menu** and restart Home Assistant.
 
 ### Manual
 
@@ -55,7 +55,7 @@ The module uses a hierarchy override for honeycomb options and sub options so yo
         1. Ensure Resource type is left as Javascript Module
 
 ## How to use
-fire-dom-event action, you can call the honeycomb menu while passing the config options to the property honeycomb_menu.
+fire-dom-event action, you can call the honeycomb menu while passing the config options to the property pat97_honeycomb_menu.
 
 ```yaml
 - type: vertical-stack
@@ -64,7 +64,7 @@ fire-dom-event action, you can call the honeycomb menu while passing the config 
     entity: light.kitchen
     hold_action:
       action: fire-dom-event
-      honeycomb_menu:
+      pat97_honeycomb_menu:
         template: light
         autoclose: false
         active: true
@@ -172,7 +172,7 @@ Keep in mind that some service data requires an int and you maybe sending a floa
 ```yaml
 ...
 action: fire-dom-event
-honeycomb_menu:
+pat97_honeycomb_menu:
   entity: light.kitchen
   xy_pad:
     x:
@@ -196,7 +196,7 @@ As by default honeycomb menu items uses custom:buton-card for buttons, you can d
 ```yaml
 ...
 action: fire-dom-event
-honeycomb_menu:
+pat97_honeycomb_menu:
   entity: fan.master_bedroom
   buttons:
     - icon: 'mdi:information-variant'
@@ -233,7 +233,7 @@ Say you have defined a honeycomb menu template for lights, you can then allow th
 
 edit the honeycomb menu templates file (*don't confuse templating with honeycomb templates)
 ```yaml
-honeycomb_menu_templates:
+pat97_honeycomb_menu_templates:
   light:
     variables:
       timer: null
@@ -277,7 +277,7 @@ Below is an example on how to assign a menu to the above example.
   entity: light.back_yard_garden_leds
   hold_action:
     action: fire-dom-event
-    honeycomb_menu:
+    pat97_honeycomb_menu:
       template: light
       variables:
         motion: automation.motion_back_yard_garden_leds

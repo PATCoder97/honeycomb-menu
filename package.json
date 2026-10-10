@@ -1,8 +1,8 @@
 {
     "name": "pat97-honeycomb-menu",
     "private": true,
-    "version": "0.15.1",
-    "description": "Honeycomb popup menu with Mushroom styling for Home Assistant Lovelace cards",
+    "version": "0.15.2",
+    "description": "Mushroom-styled popup menu for Home Assistant Lovelace cards",
     "scripts": {
         "build": "webpack",
         "watch": "webpack --watch --mode=development"
